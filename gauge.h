@@ -85,6 +85,7 @@ struct LinkConfig { // Force=ForceSingleLink
     return norm<TOL;
   }
 
+
   void decomposition(){
     Eigen::JacobiSVD<MC> svd;
     svd.compute(W, Eigen::ComputeFullU | Eigen::ComputeFullV); // U S V^\dagger
@@ -94,12 +95,12 @@ struct LinkConfig { // Force=ForceSingleLink
     U = 1.0/u() * Omega;
   }
 
-  void update_W(){
+  void update(){
     W = u()*Phi*U;
     assert( check_consistency() );
   }
 
-  void update_W_from( const MC& Wnew ){
+  void update_from( const MC& Wnew ){
     W = Wnew;
     decomposition();
     assert( check_consistency() );

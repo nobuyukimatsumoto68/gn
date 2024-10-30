@@ -8,19 +8,17 @@
 
 int main(){
 
-  const int Nc=2;
-
   using Force = ForceSingleLink;
-
   using Gauge = LinkConfig;
-  Gauge W(Nc);
-
   using Action = GaussianAction;
+
+  const int Nc=2;
   const double beta = 2.0;
+  Gauge W(Nc);
   Action S(beta);
 
   // srand((unsigned int) time(0));
-  W.update_W_from( MC::Random(Nc, Nc) );
+  W.update_from( MC::Random(Nc, Nc) );
   std::cout << W << std::endl;
 
   {

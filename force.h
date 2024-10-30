@@ -33,7 +33,7 @@ struct ForceSingleLink{
 
   double square() const { return pi.squaredNorm(); }
 
-  void rand(){ pi = VR::Random(2*Nc*Nc); }
+  void rand(){ pi = VR::Random(2*Nc*Nc); } // @@@ make it Gaussian
 
   ForceSingleLink& operator+=(const ForceSingleLink& rhs){
     pi += rhs.pi;
