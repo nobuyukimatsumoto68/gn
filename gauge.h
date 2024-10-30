@@ -4,9 +4,15 @@
 #include <cmath>
 #include <vector>
 
-#include "typedefs_and_globalfuncs.h"
 
-struct LinkConfig {
+/*
+  Gauge objects should have:
+  Gauge operator+=(const Force& rhs);
+*/
+
+
+
+struct LinkConfig { // Force=ForceSingleLink
   const int Nc;
   const int NA;
   std::vector<MC> t; // generators; tr(TaTb) = delta_{ab}
@@ -30,6 +36,19 @@ struct LinkConfig {
     assert(Nc>=2);
     set_generators();
   }
+
+
+  LinkConfig& operator+=(const ForceSingleLink& f) {
+    VR dwr = f.pi.segment(0, Nc*Nc);
+    VR dwi = f.pi.segment(Nc*Nc, Nc*Nc);
+    W += Eigen::Map<MR>( dwr.data(), Nc, Nc );
+    W += I*Eigen::Map<MR>( dwi.data(), Nc, Nc );
+    update_others();
+    return *this;
+  }
+
+  inline MC id() const { return MC::Identity(Nc,Nc); }
+  inline Complex u() const { return std::exp(I*theta); }
 
   void set_generators(){
     for(int i=0; i<Nc; i++){
@@ -59,9 +78,8 @@ struct LinkConfig {
     // for( auto& elem : t ) elem *= 1.0/std::sqrt(2.0);
   }
 
-  inline Complex u() const { return std::exp(I*theta); }
 
-  bool check_consistency( const double TOL=1.0e-13 ) const {
+  bool check_consistency( const double TOL=1.0e-15 ) const {
     const MC check = u()*Phi*U;
     const double norm = (check-W).norm()/(std::sqrt(2.0)*Nc);
     return norm<TOL;
@@ -76,38 +94,47 @@ struct LinkConfig {
     U = 1.0/u() * Omega;
   }
 
-  void update( const MC& Wnew ){
+  void update_W(){
+    W = u()*Phi*U;
+    assert( check_consistency() );
+  }
+
+  void update_W_from( const MC& Wnew ){
     W = Wnew;
     decomposition();
     assert( check_consistency() );
   }
 
+  void update_others(){
+    decomposition();
+    assert( check_consistency() );
+  }
 
-  MR J() const { // (i,j) -> one dim index in row major format
+  MR J() const {
     MR res = MR::Zero(2*Nc*Nc, 2*Nc*Nc);
     for(int a=0; a<NA; a++){
-      const MC mat = ( I*u()*Phi*t[a]*U ).transpose(); // transpose to convert to row major
+      const MC mat = ( I*u()*Phi*t[a]*U );
       MR Re = mat.real(); // to avoid bugs of Eigen; no const, no .real().data()
       MR Im = mat.imag(); // to avoid bugs of Eigen; no const, no .real().data()
       res.block(a, 0, 1, Nc*Nc) = Eigen::Map<VR>( Re.data(), Nc*Nc ).transpose();
       res.block(a, Nc*Nc, 1, Nc*Nc) = Eigen::Map<VR>( Im.data(), Nc*Nc ).transpose();
     }
     { // 0th element
-      const MC mat = ( I*u()*Phi*U ).transpose(); // transpose to convert to row major
+      const MC mat = ( I*u()*Phi*U );
       MR Re = mat.real(); // to avoid bugs of Eigen; no const, no .real().data()
       MR Im = mat.imag(); // to avoid bugs of Eigen; no const, no .real().data()
       res.block(Nc*Nc-1, 0, 1, Nc*Nc) = Eigen::Map<VR>( Re.data(), Nc*Nc ).transpose();
       res.block(Nc*Nc-1, Nc*Nc, 1, Nc*Nc) = Eigen::Map<VR>( Im.data(), Nc*Nc ).transpose();
     }
     for(int a=0; a<NA; a++){
-      const MC mat = ( u()*t[a]*U ).transpose(); // transpose to convert to row major
+      const MC mat = ( u()*t[a]*U );
       MR Re = mat.real(); // to avoid bugs of Eigen; no const, no .real().data()
       MR Im = mat.imag(); // to avoid bugs of Eigen; no const, no .real().data()
       res.block(Nc*Nc+a, 0, 1, Nc*Nc) = Eigen::Map<VR>( Re.data(), Nc*Nc ).transpose();
       res.block(Nc*Nc+a, Nc*Nc, 1, Nc*Nc) = Eigen::Map<VR>( Im.data(), Nc*Nc ).transpose();
     }
     { // 0th element
-      const MC mat = ( u()*U ).transpose(); // transpose to convert to row major
+      const MC mat = ( u()*U );
       MR Re = mat.real(); // to avoid bugs of Eigen; no const, no .real().data()
       MR Im = mat.imag(); // to avoid bugs of Eigen; no const, no .real().data()
       res.block(2*Nc*Nc-1, 0, 1, Nc*Nc) = Eigen::Map<VR>( Re.data(), Nc*Nc ).transpose();
@@ -115,5 +142,7 @@ struct LinkConfig {
     }
     return res;
   }
+
+  friend std::ostream& operator<<(std::ostream& os, const LinkConfig& v){ os << v.W; return os; }
 
 };
