@@ -21,19 +21,15 @@ struct HMC {
     return res;
   }
 
-  void leapfrog_explicit( Force& pi, Gauge& W ) const {
+  void leapfrog_explicit_singlestep( Force& pi, Gauge& W ) const {
     pi += -0.5*tau * S.d(W);
     W += tau * pi;
     pi += -0.5*tau * S.d(W);
   }
 
-  // void leapfrog_explicit( Force& pi, Gauge& W ) const {
-  //   for(int n=0; n<nsteps; n++){
-  //     pi += -0.5*tau * S.d(W);
-  //     W += tau * pi;
-  //     pi += -0.5*tau * S.d(W);
-  //   }
-  // }
+  void leapfrog_explicit( Force& pi, Gauge& W ) const {
+    for(int n=0; n<nsteps; n++) leapfrog_explicit_singlestep(pi,W);
+  }
 
   // void run( Force2& phi0, const Gauge2& U0, double& r, double& dH, bool& is_accept, const bool no_reject = false ) {
   //   Force2 phi = phi0;

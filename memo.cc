@@ -163,3 +163,221 @@
     std::cout << std::endl;
   }
 
+
+
+
+
+
+  int nsteps = 20;
+ if (argc>1){ nsteps = atoi(argv[1]); }
+
+  using Force = ForceSingleLink;
+  using Gauge = LinkConfig;
+  using Action = GaussianAction;
+
+  const int Nc=2;
+  const double beta = 2.0;
+  Gauge W(Nc);
+  Action S(beta);
+
+  // srand((unsigned int) time(0));
+  W.update_from( MC::Random(Nc, Nc) );
+  // std::cout << W << std::endl;
+
+  {
+    Force pi(Nc);
+    pi.rand();
+
+    const double stot = 1.0;
+
+    // for(int nsteps = 10; nsteps <= 20; nsteps+=2 ){
+    HMC<Force, Gauge, Action> hmc(S, stot, nsteps);
+
+    // std::cout << pi << std::endl;
+    // std::cout << W << std::endl;
+
+    // std::cout << S.d( W ) << std::endl;
+    // std::cout << 0.5 * S.d( W ) << std::endl;
+    // pi += 0.5 * S.d( W );
+
+    const double Hinit = hmc.H(pi,W);
+    // std::cout << Hinit << std::endl;
+    hmc.leapfrog_explicit(pi, W);
+    const double Hfin = hmc.H(pi,W);
+    // std::cout << Hfin << std::endl;
+
+    const double diff = Hfin-Hinit;
+    std::cout << hmc.tau << "\t" << diff << std::endl;
+    // }
+
+    // std::cout << pi << std::endl;
+    // std::cout << W << std::endl;
+  }
+
+
+  { // a, Phi
+    const double eps = 1.0e-5;
+
+    for(int a=0; a<W.NA; a++){
+      std::cout << S.dphia(W, a) << std::endl;
+
+      LinkConfig WP = W;
+      LinkConfig WM = W;
+
+      WP.Phi = W.Phi + eps*W.t[a];
+      WP.update();
+
+      WM.Phi = W.Phi - eps*W.t[a];
+      WM.update();
+
+      std::cout << ( S(WP)-S(WM) )/(2.0*eps) << std::endl;
+    }
+  }
+  {
+    std::cout << S.dphi0(W) << std::endl;
+
+    const double eps = 1.0e-5;
+    LinkConfig WP = W;
+    LinkConfig WM = W;
+
+    WP.Phi = W.Phi + eps * W.id();
+    WP.update();
+
+    WM.Phi = W.Phi - eps * W.id();
+    WM.update();
+
+    std::cout << ( S(WP)-S(WM) )/(2.0*eps) << std::endl;
+  }
+
+
+
+
+  std::cout << S.d(W) << std::endl;
+  for(int i=0; i<W.Nc; i++){
+    for(int j=0; j<W.Nc; j++){
+      const double eps = 1.0e-5;
+      LinkConfig WP = W;
+      LinkConfig WM = W;
+
+      WP(i,j) += eps;
+      WP.update_others();
+      WM(i,j) -= eps;
+      WM.update_others();
+
+      std::cout << ( S(WP)-S(WM) )/(2.0*eps) << " ";
+    }
+  }
+  for(int i=0; i<W.Nc; i++){
+    for(int j=0; j<W.Nc; j++){
+      const double eps = 1.0e-5;
+      LinkConfig WP = W;
+      LinkConfig WM = W;
+
+      WP(i,j) += I*eps;
+      WP.update_others();
+      WM(i,j) -= I*eps;
+      WM.update_others();
+
+      std::cout << ( S(WP)-S(WM) )/(2.0*eps) << " ";
+    }
+  }
+  std::cout << std::endl;
+
+
+
+  // std::cout << S(W) << std::endl;
+  // srand((unsigned int) time(0));
+  W.update_from( MC::Random(Nc, Nc) );
+  // std::cout << S(W) << std::endl;
+
+  {
+    Force pi(Nc);
+    pi.rand();
+
+    const double stot = 1.0;
+
+    HMC<Force, Gauge, Action> hmc(S, stot, nsteps);
+
+    const double Hinit = hmc.H(pi,W);
+    // std::cout << Hinit << std::endl;
+    hmc.leapfrog_explicit(pi, W);
+    const double Hfin = hmc.H(pi,W);
+    // std::cout << Hfin << std::endl;
+
+    const double diff = Hfin-Hinit;
+    std::cout << hmc.tau << "\t" << diff << std::endl;
+  }
+
+
+
+
+
+  { // a, U
+    const double eps = 1.0e-5;
+
+    for(int a=0; a<W.NA; a++){
+      std::cout << S.Da(W, a) << std::endl;
+
+      LinkConfig WP = W;
+      LinkConfig WM = W;
+
+      WP.U = ( I*eps*W.t[a]).exp() * W.U;
+      WP.update();
+
+      WM.U = (-I*eps*W.t[a]).exp() * W.U;
+      WM.update();
+
+      std::cout << ( S(WP)-S(WM) )/(2.0*eps) << std::endl;
+    }
+  }
+
+
+
+  std::cout << std::scientific << std::setprecision(15);
+
+  int nsteps = 10;
+  if (argc>1){ nsteps = atoi(argv[1]); }
+
+  using Force = ForceSingleLink;
+  using Gauge = LinkConfig;
+
+  const int Nc=2;
+  Gauge W(Nc);
+
+  // using Action = GaussianAction;
+  // const double beta = 2.0;
+  // Action S(beta);
+
+  // using Action = GaussianPhiAction;
+  // const double lambda = 2.0;
+  // Action S(lambda);
+
+  using Action = WilsonGaussianAction;
+  const double beta = 3.0;
+  const double lambda = 2.0;
+  Action S(beta, lambda);
+
+  // ------------------
+
+
+  // std::cout << S(W) << std::endl;
+  // srand((unsigned int) time(0));
+  W.update_from( MC::Random(Nc, Nc) );
+  // W.theta -= M_PI;
+  // W.update_others();
+  // std::cout << S(W) << std::endl;
+
+  {
+    Force pi(Nc);
+    pi.rand();
+
+    const double stot = 1.0;
+    HMC<Force, Gauge, Action> hmc(S, stot, nsteps);
+
+    const double Hinit = hmc.H(pi,W);
+    hmc.leapfrog_explicit(pi, W);
+    const double Hfin = hmc.H(pi,W);
+
+    const double diff = Hfin-Hinit;
+    std::cout << hmc.tau << "\t" << diff << std::endl;
+  }

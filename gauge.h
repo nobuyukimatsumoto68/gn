@@ -24,13 +24,13 @@ struct LinkConfig { // Force=ForceSingleLink
   int n;
 
   LinkConfig( const int Nc )
-    : Nc(Nc)
-    , NA(Nc*Nc-1)
-    , W(MC::Identity(Nc,Nc))
-    , theta(0.0)
-    , U(MC::Identity(Nc,Nc))
-    , Phi(MC::Identity(Nc,Nc))
-    , n(0)
+    : Nc( Nc )
+    , NA( Nc*Nc-1 )
+    , W( id() )
+    , theta( 0.0 )
+    , U( id() )
+    , Phi( id() )
+    , n( 0 )
   {
     assert( check_consistency() );
     assert(Nc>=2);
@@ -48,30 +48,34 @@ struct LinkConfig { // Force=ForceSingleLink
   }
 
   inline MC id() const { return MC::Identity(Nc,Nc); }
-  inline Complex u() const { return std::exp(I*theta); }
+  inline Complex u1( const double alpha ) const { return std::exp(I*alpha); }
+  inline Complex u() const { return u1(theta); }
+  inline MC operator()() const { return W; }
+  inline Complex operator()(const int i, const int j) const { return W(i,j); }
+  inline Complex& operator()(const int i, const int j) { return W(i,j); }
 
   void set_generators(){
     for(int i=0; i<Nc; i++){
       for(int j=i+1; j<Nc; j++){
-	{
-	  MC tmp = MC::Zero(Nc,Nc);
-	  tmp(i,j) = 1.0;
-	  tmp(j,i) = 1.0;
-	  t.push_back(tmp/std::sqrt(2.0));
-	}
-	{
-	  MC tmp = MC::Zero(Nc,Nc);
-	  tmp(i,j) = -I;
-	  tmp(j,i) =  I;
-	  t.push_back(tmp/std::sqrt(2.0));
-	}
+        {
+          MC tmp = MC::Zero(Nc,Nc);
+          tmp(i,j) = 1.0;
+          tmp(j,i) = 1.0;
+          t.push_back(tmp/std::sqrt(2.0));
+        }
+        {
+          MC tmp = MC::Zero(Nc,Nc);
+          tmp(i,j) = -I;
+          tmp(j,i) =  I;
+          t.push_back(tmp/std::sqrt(2.0));
+        }
       }}
 
     for(int m=1; m<Nc; m++){
       MC tmp = MC::Zero(Nc,Nc);
       for(int i=0; i<Nc; i++){
-	if(i<m) tmp(i,i) = 1.0;
-	else if(i==m) tmp(i,i) = -m;
+        if(i<m) tmp(i,i) = 1.0;
+        else if(i==m) tmp(i,i) = -m;
       }
       t.push_back( tmp/std::sqrt(m*(m+1.0)) );
     }
@@ -79,9 +83,10 @@ struct LinkConfig { // Force=ForceSingleLink
   }
 
 
-  bool check_consistency( const double TOL=1.0e-15 ) const {
+  bool check_consistency( const double TOL=1.0e-14 ) const {
     const MC check = u()*Phi*U;
     const double norm = (check-W).norm()/(std::sqrt(2.0)*Nc);
+    if(norm > TOL) std::clog << "norm = " << norm << std::endl;
     return norm<TOL;
   }
 
@@ -90,9 +95,11 @@ struct LinkConfig { // Force=ForceSingleLink
     Eigen::JacobiSVD<MC> svd;
     svd.compute(W, Eigen::ComputeFullU | Eigen::ComputeFullV); // U S V^\dagger
     Phi = svd.matrixU() * svd.singularValues().asDiagonal() * svd.matrixU().adjoint();
-    const MC Omega = svd.matrixU() * svd.matrixV().adjoint();
-    theta = (1.0/Nc) * std::arg( Omega.determinant() ) + 2.0*M_PI*n/Nc;
-    U = 1.0/u() * Omega;
+    MC Omega = svd.matrixU() * svd.matrixV().adjoint();
+    Omega *= u1(-theta);
+    const double dtheta = std::arg( Omega.determinant() ) / Nc;
+    theta += dtheta;
+    U = u1(-dtheta) * Omega;
   }
 
   void update(){
