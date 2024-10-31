@@ -21,7 +21,7 @@ struct LinkConfig { // Force=ForceSingleLink
   double theta;
   MC U;
   MC Phi;
-  int n;
+  // int n;
 
   LinkConfig( const int Nc )
     : Nc( Nc )
@@ -30,7 +30,7 @@ struct LinkConfig { // Force=ForceSingleLink
     , theta( 0.0 )
     , U( id() )
     , Phi( id() )
-    , n( 0 )
+      // , n( 0 )
   {
     assert( check_consistency() );
     assert(Nc>=2);
