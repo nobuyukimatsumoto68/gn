@@ -1,5 +1,7 @@
 #pragma once
 
+#include <random>
+
 template <class Force, class Gauge, class Action>
 struct HMC {
   const Action S;
@@ -7,12 +9,13 @@ struct HMC {
   const int nsteps;
   const double tau;
 
-  HMC(const Action& S_, const double stot_=1.0, const int nsteps_=10)
+  HMC(const Action& S_, const double stot_=1.0, const int nsteps_=10, const int seed_=1)
     : S(S_)
     , stot(stot_)
     , nsteps(nsteps_)
     , tau(stot/nsteps)
-  {}
+  {
+  }
 
   double H( const Force& pi, const Gauge& W ) {
     double res = 0.0;

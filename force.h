@@ -17,7 +17,7 @@ struct ForceSingleLink{
   const int n;
   VR pi;
 
-  ForceSingleLink(const int Nc_)
+  ForceSingleLink(const int Nc_, const int seed_=2)
     : Nc(Nc_)
     , n(2*Nc*Nc)
   {
@@ -33,7 +33,10 @@ struct ForceSingleLink{
 
   double square() const { return pi.squaredNorm(); }
 
-  void rand(){ pi = VR::Random(2*Nc*Nc); } // @@@ make it Gaussian
+  void rand( const std::function<double()>& gauss ){
+    // pi = VR::Random(2*Nc*Nc);
+    for(int i=0; i<pi.size(); i++) pi(i) = gauss();
+  } // @@@ make it multivariate Gaussian
 
   ForceSingleLink& operator+=(const ForceSingleLink& rhs){
     pi += rhs.pi;

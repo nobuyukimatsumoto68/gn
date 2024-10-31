@@ -60,6 +60,14 @@ struct LinkConfig { // Force=ForceSingleLink
     return res;
   }
 
+  void randomize( const std::function<double()>& f ){
+    for(int i=0; i<Nc; i++){
+      for(int j=0; j<Nc; j++){
+	W(i, j) = f() + I*f();
+      }}
+    update_others();
+  }
+
   void set_generators(){
     for(int i=0; i<Nc; i++){
       for(int j=i+1; j<Nc; j++){
