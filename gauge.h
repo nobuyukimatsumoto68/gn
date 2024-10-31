@@ -21,7 +21,6 @@ struct LinkConfig { // Force=ForceSingleLink
   double theta;
   MC U;
   MC Phi;
-  // int n;
 
   LinkConfig( const int Nc )
     : Nc( Nc )
@@ -30,9 +29,8 @@ struct LinkConfig { // Force=ForceSingleLink
     , theta( 0.0 )
     , U( id() )
     , Phi( id() )
-      // , n( 0 )
   {
-    assert( check_consistency() );
+    check_consistency();
     assert(Nc>=2);
     set_generators();
   }
@@ -97,11 +95,11 @@ struct LinkConfig { // Force=ForceSingleLink
   }
 
 
-  bool check_consistency( const double TOL=1.0e-14 ) const {
+  void check_consistency( const double TOL=1.0e-14 ) const {
     const MC check = u()*Phi*U;
     const double norm = (check-W).norm()/(std::sqrt(2.0)*Nc);
     if(norm > TOL) std::clog << "norm = " << norm << std::endl;
-    return norm<TOL;
+    assert( norm<TOL );
   }
 
 
@@ -118,18 +116,18 @@ struct LinkConfig { // Force=ForceSingleLink
 
   void update(){
     W = u()*Phi*U;
-    assert( check_consistency() );
+    check_consistency();
   }
 
   void update_from( const MC& Wnew ){
     W = Wnew;
     decomposition();
-    assert( check_consistency() );
+    check_consistency();
   }
 
   void update_others(){
     decomposition();
-    assert( check_consistency() );
+    check_consistency();
   }
 
   MR J() const {
