@@ -54,6 +54,12 @@ struct LinkConfig { // Force=ForceSingleLink
   inline Complex operator()(const int i, const int j) const { return W(i,j); }
   inline Complex& operator()(const int i, const int j) { return W(i,j); }
 
+  double mod2pi( const double alpha ) const {
+    double res = alpha + 2.0*M_PI*2;
+    res -= int(std::floor(res/(2.0*M_PI)))*2.0*M_PI;
+    return res;
+  }
+
   void set_generators(){
     for(int i=0; i<Nc; i++){
       for(int j=i+1; j<Nc; j++){
@@ -98,7 +104,7 @@ struct LinkConfig { // Force=ForceSingleLink
     MC Omega = svd.matrixU() * svd.matrixV().adjoint();
     Omega *= u1(-theta);
     const double dtheta = std::arg( Omega.determinant() ) / Nc;
-    theta += dtheta;
+    theta = mod2pi( theta + dtheta );
     U = u1(-dtheta) * Omega;
   }
 

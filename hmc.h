@@ -47,5 +47,5 @@ struct HMC {
   //   }
   //   else is_accept=false;
   // }
-  
+
 };

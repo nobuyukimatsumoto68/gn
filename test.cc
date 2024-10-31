@@ -27,21 +27,16 @@ int main( int argc, char *argv[] ){
   // Action S(lambda);
 
   using Action = WilsonGaussianAction;
-  const double beta = 3.0;
+  const double beta = 0.5;
   const double lambda = 2.0;
   Action S(beta, lambda);
 
   // ------------------
 
-
-  // std::cout << S(W) << std::endl;
   // srand((unsigned int) time(0));
   W.update_from( MC::Random(Nc, Nc) );
-  // W.theta -= M_PI;
-  // W.update_others();
-  // std::cout << S(W) << std::endl;
 
-  {
+  { // scaling test
     Force pi(Nc);
     pi.rand();
 
@@ -55,6 +50,20 @@ int main( int argc, char *argv[] ){
     const double diff = Hfin-Hinit;
     std::cout << hmc.tau << "\t" << diff << std::endl;
   }
+
+  // { // branch test
+  //   Force pi(Nc);
+  //   pi.rand();
+
+  //   const double stot = 400.0;
+  //   nsteps = 1000;
+  //   HMC<Force, Gauge, Action> hmc(S, stot, nsteps);
+
+  //   for(int n=0; n<nsteps; n++){
+  //     hmc.leapfrog_explicit_singlestep(pi, W);
+  //     std::cout << W.theta << std::endl;
+  //   }
+  // }
 
 
   return 0;
