@@ -415,3 +415,34 @@
   //   }
   // }
 
+
+
+
+  // { // scaling test
+  //   Force pi(Nc);
+  //   pi.rand( gaussian );
+
+  //   const double stot = 1.0;
+  //   HMC<Force, Gauge, Action> hmc(S, stot, nsteps);
+
+  //   const double Hinit = hmc.H(pi,W);
+  //   hmc.leapfrog_explicit(pi, W);
+  //   const double Hfin = hmc.H(pi,W);
+
+  //   const double diff = Hfin-Hinit;
+  //   std::cout << hmc.tau << "\t" << diff << std::endl;
+  // }
+
+  // { // branch test
+  //   Force pi(Nc);
+  //   pi.rand( gaussian );
+
+  //   const double stot = 400.0;
+  //   nsteps = 1000;
+  //   HMC<Force, Gauge, Action> hmc(S, stot, nsteps);
+
+  //   for(int n=0; n<nsteps; n++){
+  //     hmc.leapfrog_explicit_singlestep(pi, W);
+  //     std::cout << W.theta << std::endl;
+  //   }
+  // }

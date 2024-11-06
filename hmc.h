@@ -34,21 +34,28 @@ struct HMC {
     for(int n=0; n<nsteps; n++) leapfrog_explicit_singlestep(pi,W);
   }
 
-  // void run( Force2& phi0, const Gauge2& U0, double& r, double& dH, bool& is_accept, const bool no_reject = false ) {
-  //   Force2 phi = phi0;
-  //   Force2 p = gen();
-  //   const double h0 = H(phi, U0, p);
-  //   leapfrog( phi, U0, p );
-  //   const double h1 = H(phi, U0, p);
+  void run( Gauge& W0,
+	    double& r,
+	    double& dH,
+	    bool& is_accept,
+	    double (*pi_init)(),
+	    double (*uniform)(),
+	    const bool no_reject = false ) {
+    Force pi(W0.Nc);
+    pi.rand( pi_init );
+    Gauge W( W0 );
+    const double h0 = H(pi, W);
+    leapfrog_explicit( pi, W );
+    const double h1 = H(pi, W);
 
-  //   dH = h1-h0;
-  //   r = std::min( 1.0, std::exp(-dH) );
-  //   const double a = rnd_master.uniform();
-  //   if( a < r || no_reject ){
-  //     phi0 = phi;
-  //     is_accept=true;
-  //   }
-  //   else is_accept=false;
-  // }
+    dH = h1-h0;
+    r = std::min( 1.0, std::exp(-dH) );
+    const double a = uniform();
+    if( a < r || no_reject ){
+      W0 = W;
+      is_accept=true;
+    }
+    else is_accept=false;
+  }
 
 };

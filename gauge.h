@@ -35,6 +35,33 @@ struct LinkConfig { // Force=ForceSingleLink
     set_generators();
   }
 
+  LinkConfig( const LinkConfig& other )
+    : Nc( other.Nc )
+    , NA( Nc*Nc-1 )
+    , t( other.t )
+    , W( other.W )
+    , theta( other.theta )
+    , U( other.U )
+    , Phi( other.Phi )
+  {
+    check_consistency();
+    assert(Nc>=2);
+  }
+
+
+  // copy assignment
+  LinkConfig& operator=(const LinkConfig& other) {
+    if (this == &other) return *this;
+
+    assert(Nc==other.Nc);
+    W = other.W;
+    theta = other.theta;
+    U = other.U;
+    Phi = other.Phi;
+    check_consistency();
+
+    return *this;
+  }
 
   LinkConfig& operator+=(const ForceSingleLink& f) {
     VR dwr = f.pi.segment(0, Nc*Nc);
