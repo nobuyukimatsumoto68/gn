@@ -2,32 +2,50 @@
 
 #include <random>
 
-template <class Force, class Gauge, class Action>
+template <class Force, class Gauge, class Action, class Kernel>
 struct HMC {
-  const Action S;
+  const Action& S;
+  const Kernel& K;
   const double stot;
   const int nsteps;
   const double tau;
 
-  HMC(const Action& S_, const double stot_=1.0, const int nsteps_=10, const int seed_=1)
+  HMC(const Action& S_, const Kernel& K_,
+      const double stot_=1.0, const int nsteps_=10, const int seed_=1)
     : S(S_)
+    , K(K_)
     , stot(stot_)
     , nsteps(nsteps_)
     , tau(stot/nsteps)
   {
   }
 
-  double H( const Force& pi, const Gauge& W ) {
+  double H( const Force& pi, const Gauge& W ) const {
     double res = 0.0;
-    res += 0.5 * pi.square();
+    res += 0.5 * K(pi, W);
     res += S(W);
+    res -= 0.5 * std::log( K.det(W) );
     return res;
   }
 
-  void leapfrog_explicit_singlestep( Force& pi, Gauge& W ) const {
-    pi += -0.5*tau * S.d(W);
-    W += tau * pi;
-    pi += -0.5*tau * S.d(W);
+  Force dHdp( const Force& p, const Gauge& W ) const { return K.act( W, p ); }
+
+  Force dHdW( const Force& p, const Gauge& W ) const {
+    Force res = S.d(W);
+    res += 0.5 * K.d(p, W);
+    res -= 0.5 * K.det_log_d(W);
+    return res;
+  }
+  
+  // void leapfrog_explicit_singlestep( Force& pi, Gauge& W ) const {
+  //   pi += -0.5*tau * S.d(W);
+  //   W += tau * pi;
+  //   pi += -0.5*tau * S.d(W);
+  // }
+  void leapfrog_explicit_singlestep( Force& p, Gauge& W ) const {
+    p += -0.5*tau * dHdW(p, W);
+    W += tau * dHdp(p, W);
+    p += -0.5*tau * dHdW(p, W);
   }
 
   void leapfrog_explicit( Force& pi, Gauge& W ) const {

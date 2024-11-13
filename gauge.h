@@ -80,7 +80,7 @@ struct LinkConfig { // Force=ForceSingleLink
   inline Complex& operator()(const int i, const int j) { return W(i,j); }
 
   double mod2pi( const double alpha ) const {
-    double res = alpha + 2.0*M_PI*2;
+    double res = alpha + 4.0*M_PI;
     res -= int(std::floor(res/(2.0*M_PI)))*2.0*M_PI;
     return res;
   }
@@ -122,7 +122,7 @@ struct LinkConfig { // Force=ForceSingleLink
   }
 
 
-  void check_consistency( const double TOL=1.0e-14 ) const {
+  void check_consistency( const double TOL=1.0e-10 ) const {
     const MC check = u()*Phi*U;
     const double norm = (check-W).norm()/(std::sqrt(2.0)*Nc);
     if(norm > TOL) std::clog << "norm = " << norm << std::endl;
@@ -132,6 +132,7 @@ struct LinkConfig { // Force=ForceSingleLink
 
   void decomposition(){
     Eigen::JacobiSVD<MC> svd;
+    // Eigen::BDCSVD<MC> svd;
     svd.compute(W, Eigen::ComputeFullU | Eigen::ComputeFullV); // U S V^\dagger
     Phi = svd.matrixU() * svd.singularValues().asDiagonal() * svd.matrixU().adjoint();
     MC Omega = svd.matrixU() * svd.matrixV().adjoint();

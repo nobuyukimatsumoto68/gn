@@ -7,6 +7,7 @@
 template<typename T, class Gauge> // T currently for double only
 struct Obs {
   std::string description;
+  double param;
   std::function<T(const Gauge&)> f;
   T exact;
 
@@ -15,10 +16,12 @@ struct Obs {
   Obs
   (
    const std::string& description_,
+   const double param,
    const std::function<T(const Gauge&)>& f_,
    const T exact_
    )
     : description(description_)
+    , param(param)
     , f(f_)
     , exact(exact_)
   {

@@ -29,7 +29,7 @@ int main( int argc, char *argv[] ){
   Gauge W(Nc);
 
   std::vector<Obs<double, Gauge>*> obslist;
-  std::string data_path="./obs/";
+  std::string data_path="./obs_exc/";
   std::filesystem::create_directory(data_path);
 
   // ------------------
@@ -51,48 +51,23 @@ int main( int argc, char *argv[] ){
   // ------------------
 
   using Action = WilsonGaussianAction;
-  double beta = 2.5;
-  if (argc>2){ beta = atof(argv[2]); }
-  const double lambda = 1.0;
+  const double beta = 2.5;
+  double lambda = 1.0;
+  if (argc>2){ lambda = atof(argv[2]); }
   Action S(beta, lambda);
 
-  const double lambda_0 = 2.0 * std::cyl_bessel_i( 1, beta ) / beta;
-  const double lambda_F = 2.0 * std::cyl_bessel_i( 2, beta ) / beta;
-  double exact = 0.0;
-  if( std::abs(lambda_0)>1.0e-14 ) exact = 2.0*lambda_F/lambda_0;
-
-  Obs<double, Gauge> retrU( "retrU", beta, [](const Gauge& W ){ return W.U.trace().real(); }, 0.0 );
-  obslist.push_back(&retrU);
-  // Obs<double, Gauge> imtrU( "imtrU", beta, [](const Gauge& W ){ return W.U.trace().imag(); }, 0.0 );
-  // obslist.push_back(&imtrU);
-  Obs<double, Gauge> retrUsq( "retrUsq", beta, [](const Gauge& W ){
-    return ( (W.U).trace() * (W.U).trace() ).real();
+  Obs<double, Gauge> phi_tr_re( "retrPhi", lambda, [](const Gauge& W ){
+    return ( W.Phi - W.id() ).trace().real();
   }, 0.0 );
-  obslist.push_back(&retrUsq);
-  // Obs<double, Gauge> imtrUsq( "imtrUsq", beta, [](const Gauge& W ){
-  //   return ( (W.U).trace() * (W.U).trace() ).imag();
-  // }, 0.0 );
-  // obslist.push_back(&imtrUsq);
-  Obs<double, Gauge> retrUtrUdag( "retrUtrUdag", beta, [](const Gauge& W ){
-    return ( (W.U).trace() * (W.U.adjoint()).trace() ).real();
+  obslist.push_back(&phi_tr_re);
+  Obs<double, Gauge> phi_tr_im( "imtrPhi", lambda, [](const Gauge& W ){
+    return ( W.Phi - W.id() ).trace().imag();
   }, 0.0 );
-  obslist.push_back(&retrUtrUdag);
-  Obs<double, Gauge> retrUcub( "retrUcub", beta, [](const Gauge& W ){
-    return ( (W.U).trace() * (W.U).trace() * (W.U).trace() ).real();
+  obslist.push_back(&phi_tr_im);
+  Obs<double, Gauge> phi_norm( "trPhisq", lambda, [](const Gauge& W ){
+    return ( W.Phi - W.id() ).squaredNorm();
   }, 0.0 );
-  obslist.push_back(&retrUcub);
-  Obs<double, Gauge> retrUsqtrUdag( "retrUsqtrUdag", beta, [](const Gauge& W ){
-    return ( (W.U).trace() * (W.U).trace() * (W.U.adjoint()).trace() ).real();
-  }, 0.0 );
-  obslist.push_back(&retrUsqtrUdag);
-  // Obs<double, Gauge> retrUtrUdagsq( "retrUtrUdagsq", beta, [](const Gauge& W ){
-  //   return ( (W.U).trace() * (W.U.adjoint()).trace() * (W.U.adjoint()).trace() ).real();
-  // }, 0.0 );
-  // obslist.push_back(&retrUtrUdagsq);
-  // Obs<double, Gauge> imtrUsqtrUdag( "imtrUsqtrUdag", beta, [](const Gauge& W ){
-  //   return ( (W.U).trace() * (W.U).trace() * (W.U.adjoint()).trace() ).imag();
-  // }, 0.0 );
-  // obslist.push_back(&imtrUsqtrUdag);
+  obslist.push_back(&phi_norm);
 
   // ------------------
 
@@ -144,12 +119,10 @@ int main( int argc, char *argv[] ){
       // ------------------------
       
       std::ofstream of;
-      of.open( data_path+pt->description+".dat", std::ios::out | std::ios::app);
+      of.open( data_path+pt->description+std::to_string(pt->param)+".dat", std::ios::out | std::ios::app);
       if(!of) assert(false);
       of << std::scientific << std::setprecision(15);
-      of << pt->param << "\t"
-	 << mn << "\t"
-	 << er << std::endl;
+      for(auto iv=pt->v.begin(); iv!=pt->v.end(); ++iv) of << pt->param << "\t" << *iv << std::endl;
     }
   }
 

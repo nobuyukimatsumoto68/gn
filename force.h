@@ -42,6 +42,10 @@ struct ForceSingleLink{
     pi += rhs.pi;
     return *this;
   }
+  ForceSingleLink& operator-=(const ForceSingleLink& rhs){
+    pi -= rhs.pi;
+    return *this;
+  }
 
   friend ForceSingleLink operator*(ForceSingleLink v, const double a) { v.pi *= a; return v; }
   friend ForceSingleLink operator*(const double a, ForceSingleLink v) { v.pi *= a; return v; }
