@@ -54,7 +54,7 @@ struct GaussianAction {
 
 struct GaussianPhiAction {
   using Force = ForceSingleLink;
-  using Gauge = LinkConfig
+  using Gauge = LinkConfig;
 
   const double lambda;
 
@@ -98,7 +98,7 @@ struct GaussianPhiAction {
 
 struct WilsonGaussianAction {
   using Force = ForceSingleLink;
-  using Gauge = LinkConfig
+  using Gauge = LinkConfig;
 
   const double beta;
   const double lambda;

@@ -44,13 +44,13 @@ int main( int argc, char *argv[] ){
   // ------------------
 
   double beta = 3.3;
-  // if (argc>2){ beta = atof(argv[2]); }
-  const double lambda = 0.5;
+  if (argc>2){ beta = atof(argv[2]); }
+  const double lambda = 16.0;
   Action S(beta, lambda);
 
   // ------------------
 
-  const double alpha = 0.05;
+  const double alpha = 0.04;
   Kernel K(Nc, alpha);
 
   // ------------------
@@ -78,7 +78,7 @@ int main( int argc, char *argv[] ){
   // ------------------
 
   const double stot = 1.0;
-  const int nsteps = 8;
+  const int nsteps = 20;
   Integrator md(S, K, stot, nsteps);
   HMC hmc(md, rng, stot, nsteps);
 
@@ -118,13 +118,14 @@ int main( int argc, char *argv[] ){
 
       // ------------------------
       
-      // std::ofstream of;
-      // of.open( data_path+pt->description+".dat", std::ios::out | std::ios::app);
-      // if(!of) assert(false);
-      // of << std::scientific << std::setprecision(15);
-      // of << pt->param << "\t"
-      // 	 << mn << "\t"
-      // 	 << er << std::endl;
+      std::ofstream of;
+      of.open( data_path+pt->description+".dat", std::ios::out | std::ios::app);
+      if(!of) assert(false);
+      of << std::scientific << std::setprecision(15);
+      of << pt->param << "\t"
+	 << mn << "\t"
+	 << er << "\t"
+	 << pt->exact << std::endl;
     }
   }
 
