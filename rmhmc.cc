@@ -3,11 +3,12 @@
 #include <filesystem>
 
 #include "global.h"
-#include "rnd.h"
+#include "rng.h"
 #include "force.h"
 #include "gauge.h"
 #include "kernel.h"
 #include "action.h"
+#include "integrator.h"
 #include "hmc.h"
 #include "obs.h"
 
@@ -26,7 +27,13 @@ int main( int argc, char *argv[] ){
   using Force = ForceSingleLink;
   using Gauge = LinkConfig;
   using Action = WilsonGaussianAction;
-  using Kernel = TrivialKernel;
+  using Kernel = IdpWHW;
+  // using Integrator = ExplicitLeapfrog<Force,Gauge,Action,Kernel>;
+  using Integrator = ImplicitLeapfrog<Force,Gauge,Action,Kernel>;
+  using Rng = SingleRng;
+  using HMC = HMC<Force,Gauge,Integrator,Rng>;
+
+  // ---------------
 
   const int Nc=2;
   Gauge W(Nc);
@@ -37,14 +44,21 @@ int main( int argc, char *argv[] ){
 
   // ------------------
 
-  double beta = 2.3;
-  if (argc>2){ beta = atof(argv[2]); }
-  const double lambda = 1.0;
+  double beta = 3.3;
+  // if (argc>2){ beta = atof(argv[2]); }
+  const double lambda = 0.5;
   Action S(beta, lambda);
 
   // ------------------
 
-  TrivialKernel K;
+  // using Kernel = TrivialKernel;
+  // Kernel K(Nc);
+  const double alpha = 0.05;
+  Kernel K(Nc, alpha);
+
+  // ------------------
+
+  Rng rng;
 
   // ------------------
 
@@ -58,32 +72,60 @@ int main( int argc, char *argv[] ){
 
   // ------------------
 
-  mt.seed( seed );
-  W.randomize( gaussian );
+  rng.seed( seed );
+  W.randomize( [&](){ return rng.gaussian(); },
+	       [&](){ return rng.gaussian(); }
+	       );
+
 
   // ------------------
 
+  const double stot = 1.0;
+  const int nsteps = 8;
+  Integrator md(S, K, stot, nsteps);
+  HMC hmc(md, rng, stot, nsteps);
+
+  // for(int nsteps=10; nsteps<400; nsteps*=2){
+  //   const double stot = 1.0;
+  //   //const int nsteps = 40;
+  //   Integrator md(S, K, stot, nsteps);
+  //   HMC hmc(md, rng, stot, nsteps);
+
+  //   rng.seed( seed );
+  //   W.randomize( [&](){ return rng.gaussian(); },
+  // 		 [&](){ return rng.gaussian(); }
+  // 		 );
+
+
+  //   {
+  //     Force p = K.gen( W, rng );
+
+  //     const double Hinit = md.H(p,W);
+  //     // std::cout << Hinit << std::endl;
+  //     for(int i=0; i<md.nsteps; i++) md.onestep( p, W );
+  //     const double Hfin = md.H(p,W);
+  //     // std::cout << Hfin << std::endl;
+  //     const double diff = Hfin-Hinit;
+  //     std::cout << hmc.tau << "\t" << diff << std::endl;
+  //   }
+  // }
+
+
 
   {
-    const double stot = 1.0;
-    const int nsteps = 2;
-
     int ntherm=1000;
     int niter=10000;
     if (argc>3){ ntherm = atoi(argv[3]); }
     if (argc>4){ niter = atoi(argv[4]); }
-    const int interval=5;
+    const int interval=10;
 
-    HMC<Force, Gauge, Action, Kernel> hmc(S, K, stot, nsteps);
     double dH, r;
     bool is_accept;
 
-    for(int n=0; n<ntherm; n++){
-      hmc.run(W, r, dH, is_accept, &gaussian, &uniform);
-    }
+    for(int n=0; n<ntherm; n++) hmc.run(W, r, dH, is_accept);
 
     for(int n=0; n<niter; n++){
-      hmc.run(W, r, dH, is_accept, &gaussian, &uniform);
+      hmc.run(W, r, dH, is_accept);
       std::clog << "n = " << n
 		<< ", r = " << r
 		<< ", dH = " << dH

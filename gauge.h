@@ -5,6 +5,23 @@
 #include <vector>
 
 
+double& re(std::complex<double>& c)
+{ return reinterpret_cast<double (&)[2]>(c)[0]; }
+
+double& im(std::complex<double>& c)
+{ return reinterpret_cast<double (&)[2]>(c)[1]; }
+
+double re(const std::complex<double>& c)
+{
+  return reinterpret_cast<const double (&)[2]>(c)[0];
+}
+double im(const std::complex<double>& c)
+{
+  return reinterpret_cast<const double (&)[2]>(c)[1];
+}
+
+
+
 /*
   Gauge objects should have:
   Gauge operator+=(const Force& rhs);
@@ -13,6 +30,9 @@
 
 
 struct LinkConfig { // Force=ForceSingleLink
+  using Gauge=LinkConfig;
+  using Force=ForceSingleLink;
+
   const int Nc;
   const int NA;
   std::vector<MC> t; // generators; tr(TaTb) = delta_{ab}
@@ -79,16 +99,62 @@ struct LinkConfig { // Force=ForceSingleLink
   inline Complex operator()(const int i, const int j) const { return W(i,j); }
   inline Complex& operator()(const int i, const int j) { return W(i,j); }
 
+  double norm() { return W.norm(); }
+
+  void get_qij( int& q, int& i, int& j, const int qij ) const {
+    if(qij<Nc*Nc){
+      q=0;
+      j=qij%Nc;
+      i=(qij-j+1)/Nc;
+    }
+    else if(qij<2*Nc*Nc) {
+      q=1;
+      j=qij%Nc;
+      i=(qij-j+1-Nc*Nc)/Nc;
+    }
+    else assert( false );
+  }
+
+  void get_ij( int& i, int& j, const int ij ) const {
+    assert(ij<Nc*Nc);
+    j=ij%Nc;
+    i=(ij-j+1)/Nc;
+  }
+
+  double operator[](const int qij) const {
+    int q,i,j;
+    get_qij( q,i,j, qij );
+    if(q==0) return re(W(i,j));
+    else if(q==1) return im(W(i,j));
+    else assert( false );
+  }
+
+  double& operator[](const int qij) {
+    int q,i,j;
+    get_qij( q,i,j, qij );
+    if(q==0) return re(W(i,j));
+    else if(q==1) return im(W(i,j));
+    else assert( false );
+  }
+
   double mod2pi( const double alpha ) const {
     double res = alpha + 4.0*M_PI;
     res -= int(std::floor(res/(2.0*M_PI)))*2.0*M_PI;
     return res;
   }
 
-  void randomize( const std::function<double()>& f ){
+  // void randomize( const std::function<double()>& f ){
+  //   for(int i=0; i<Nc; i++){
+  //     for(int j=0; j<Nc; j++){
+  // 	W(i, j) = f() + I*f();
+  //     }}
+  //   update_others();
+  // }
+  void randomize( const std::function<double()>& f1,
+		  const std::function<double()>& f2){
     for(int i=0; i<Nc; i++){
       for(int j=0; j<Nc; j++){
-	W(i, j) = f() + I*f();
+	W(i, j) = f1() + I*f2();
       }}
     update_others();
   }
@@ -192,5 +258,19 @@ struct LinkConfig { // Force=ForceSingleLink
   }
 
   friend std::ostream& operator<<(std::ostream& os, const LinkConfig& v){ os << v.W; return os; }
+  friend Gauge operator-(Gauge v, const Gauge& w) {
+    v.W -= w.W;
+    v.update_others();
+    return v;
+  }
+  friend Gauge operator+(Gauge v, const Gauge& w) {
+    v.W += w.W;
+    v.update_others();
+    return v;
+  }
+  friend Gauge operator+(Gauge v, const Force& w) {
+    v += w;
+    return v;
+  }
 
 };

@@ -43,7 +43,7 @@ struct GaussianAction { // Force = ForceSingleLink, Gauge = LinkConfig
     VR res = VR::Zero(2*Nc*Nc);
     res.segment(0, Nc*Nc) = Eigen::Map<VR>( m_dx.data(), Nc*Nc );
     res.segment(Nc*Nc, Nc*Nc) = Eigen::Map<VR>( m_dy.data(), Nc*Nc );
-    return ForceSingleLink(res);
+    return ForceSingleLink(Nc, res);
   }
 
 };
@@ -83,7 +83,7 @@ struct GaussianPhiAction { // Force = ForceSingleLink, Gauge = LinkConfig
     dSb(2*Nc*Nc-1) = dphi0(W);
 
     VR res = W.J().inverse() * dSb;
-    return ForceSingleLink(res);
+    return ForceSingleLink(Nc, res);
   }
 
 };
@@ -133,7 +133,7 @@ struct WilsonGaussianAction { // Force = ForceSingleLink, Gauge = LinkConfig
     dSb(2*Nc*Nc-1) = dphi0(W);
 
     VR res = W.J().inverse() * dSb;
-    return ForceSingleLink(res);
+    return ForceSingleLink(Nc, res);
   }
 
 };

@@ -1,4 +1,4 @@
-#pragma once
+#pragma OConce
 
 /*
   Force objects should have:
@@ -13,6 +13,8 @@
 
 
 struct ForceSingleLink{
+  using Force = ForceSingleLink;
+
   const int Nc;
   const int n;
   VR pi;
@@ -24,19 +26,42 @@ struct ForceSingleLink{
     pi = VR::Zero(n);
   }
 
-  ForceSingleLink(const VR& pi_)
-    : Nc(pi_.size())
+  ForceSingleLink(const int Nc, const VR& pi_)
+    : Nc(Nc)
     , n(2*Nc*Nc)
   {
     pi = pi_;
   }
 
-  double square() const { return pi.squaredNorm(); }
+  ForceSingleLink(const ForceSingleLink& other)
+    : Nc(other.Nc)
+    , n(other.n)
+    , pi(other.pi)
+  {
+    assert(this != &other);
+  }
 
-  void rand( const std::function<double()>& gauss ){
-    // pi = VR::Random(2*Nc*Nc);
-    for(int i=0; i<pi.size(); i++) pi(i) = gauss();
-  } // @@@ make it multivariate Gaussian
+  double square() const { return pi.squaredNorm(); }
+  double norm() const { return pi.norm(); }
+
+  // void rand( const Kernel& kernel, const Rng& rng ){
+  //   // pi = VR::Random(2*Nc*Nc);
+  //   for(int i=0; i<pi.size(); i++) pi(i) = gauss();
+  // } // @@@ make it multivariate Gaussian
+
+  Force& operator=(const Force& other) {
+    if (this == &other) return *this;
+
+    assert(Nc==other.Nc);
+    assert(n==other.n);
+    pi = other.pi;
+
+    return *this;
+  }
+
+  double operator[](const int i) const { return pi[i]; }
+  double& operator[](const int i) { return pi[i]; }
+  int size() const { return pi.size(); }
 
   ForceSingleLink& operator+=(const ForceSingleLink& rhs){
     pi += rhs.pi;
@@ -47,7 +72,12 @@ struct ForceSingleLink{
     return *this;
   }
 
-  friend ForceSingleLink operator*(ForceSingleLink v, const double a) { v.pi *= a; return v; }
+  // friend ForceSingleLink operator*(ForceSingleLink v, const double a) { v.pi *= a; return v; }
   friend ForceSingleLink operator*(const double a, ForceSingleLink v) { v.pi *= a; return v; }
+  friend ForceSingleLink operator*(const MR& mat, ForceSingleLink v) { v.pi = mat*v.pi; return v; }
+  friend ForceSingleLink operator-(ForceSingleLink v, const ForceSingleLink& w) {
+    assert( v.Nc==w.Nc );
+    v.pi -= w.pi;
+    return v; }
   friend std::ostream& operator<<(std::ostream& os, const ForceSingleLink& v) { os << v.pi; return os; }
 };

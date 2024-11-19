@@ -446,3 +446,272 @@
   //     std::cout << W.theta << std::endl;
   //   }
   // }
+
+
+
+
+
+
+
+  // { // dHdp
+  //   Force p = K.gen( rng );
+  //   const Force dHdp = hmc.dHdp( p, W );
+  //   const double eps = 1.0e-5;
+
+  //   for(int i=0; i<2*Nc*Nc; i++){
+  //     std::cout << dHdp[i] << std::endl;
+
+  //     Force pp = p;
+  //     Force pm = p;
+  //     pp[i] += eps;
+  //     pm[i] -= eps;
+
+  //     std::cout << ( hmc.H(pp, W)-hmc.H(pm, W) )/(2.0*eps) << std::endl;
+  //   }
+  // }
+
+  { // dHdW
+    Force p = K.gen( rng );
+    const Force dHdW = hmc.dHdW( p, W );
+    const double eps = 1.0e-5;
+
+    const Force dS = S.d(W);
+
+    for(int qij=0; qij<2*Nc*Nc; qij++){
+      std::cout << dHdW[qij] << std::endl;
+
+      // int q,i,j;
+      // W.get_qij( q,i,j, qij );
+      // std::cout << "q = " << q << ", i = " << i << ", j = " << j << std::endl;
+
+      Gauge Wp = W;
+      Gauge Wm = W;
+      Wp[qij] += eps;
+      Wm[qij] -= eps;
+      Wp.update_others();
+      Wm.update_others();
+
+      // std::cout << "Wp-Wm = " << std::endl;
+      // std::cout << Wp.W-Wm.W << std::endl;
+      // std::cout << "Up-Um = " << std::endl;
+      // std::cout << Wp.U-Wm.U << std::endl;
+      // std::cout << "Phip-Phim = " << std::endl;
+      // std::cout << Wp.Phi-Wm.Phi << std::endl;
+      // std::cout << hmc.H(p, Wp) << ", " << hmc.H(p, Wm) << std::endl;
+      // std::cout << S(Wp) << ", " << S(Wm) << std::endl;
+      // std::cout << "dS =" << dS[qij] << std::endl;
+      // std::cout << "dSc=" << (S(Wp) - S(Wm))/(2.0*eps) << std::endl;
+      std::cout << ( hmc.H(p, Wp)-hmc.H(p, Wm) )/(2.0*eps) << std::endl;
+      // std::cout << ( hmc.H(p, Wp)-hmc.H(p, Wm) )/(2.0*eps) << std::endl;
+    }
+    // for(int ij=0; ij<Nc*Nc; ij++){ // re
+    //   std::cout << dHdW[ij] << std::endl;
+
+    //   int i,j;
+    //   W.get_ij( i,j, ij );
+
+    //   Gauge Wp = W;
+    //   Gauge Wm = W;
+    //   Wp(i,j) += eps;
+    //   Wm(i,j) -= eps;
+
+    //   std::cout << "Wp-Wm = " << std::endl;
+    //   std::cout << Wp.W-Wm.W << std::endl;
+
+    //   std::cout << ( hmc.H(p, Wp)-hmc.H(p, Wm) )/(2.0*eps) << std::endl;
+    // }
+    // for(int ij=0; ij<Nc*Nc; ij++){ // im
+    //   std::cout << dHdW[Nc*Nc+ij] << std::endl;
+
+    //   int i,j;
+    //   W.get_ij( i,j, ij );
+
+    //   Gauge Wp = W;
+    //   Gauge Wm = W;
+    //   Wp(i,j) += I*eps;
+    //   Wm(i,j) -= I*eps;
+
+    //   std::cout << ( hmc.H(p, Wp)-hmc.H(p, Wm) )/(2.0*eps) << std::endl;
+    // }
+  }
+
+
+
+  {
+    const double eps = 1.0e-5;
+
+    for(int qij=0; qij<2*Nc*Nc; qij++){
+      MR dk = K.wiwj_d(W, qij);
+
+      Gauge Wp = W;
+      Gauge Wm = W;
+      Wp[qij] += eps;
+      Wm[qij] -= eps;
+      Wp.update_others();
+      Wm.update_others();
+
+      MR diff = K.wiwj(Wp) - K.wiwj(Wm);
+      MR check = ( diff )/(2.0*eps);
+      std::cout << "norm = " << (dk-check).norm() << std::endl;
+    }
+
+    for(int qij=0; qij<2*Nc*Nc; qij++){
+      MR dk = K.matrix_d(W, qij);
+
+      Gauge Wp = W;
+      Gauge Wm = W;
+      Wp[qij] += eps;
+      Wm[qij] -= eps;
+      Wp.update_others();
+      Wm.update_others();
+
+      MR diff = K.matrix(Wp) - K.matrix(Wm);
+      MR check = ( diff )/(2.0*eps);
+      std::cout << "norm = " << (dk-check).norm() << std::endl;
+    }
+
+    {
+      const Force f = K.gen(W, rng);
+      Force dk = K.d(f, W);
+
+      for(int qij=0; qij<2*Nc*Nc; qij++){
+	Gauge Wp = W;
+	Gauge Wm = W;
+	Wp[qij] += eps;
+	Wm[qij] -= eps;
+	Wp.update_others();
+	Wm.update_others();
+	double Kp = K(f, Wp);
+	double Km = K(f, Wm);
+	std::cout << "norm = " << dk[qij] - (Kp-Km)/(2.0*eps) << std::endl;
+      }
+    }
+
+    {
+      Force dk = K.det_log_d(W);
+      double det = K.det(W);
+
+      {
+	for(int qij=0; qij<2*Nc*Nc; qij++){
+	  Gauge Wp = W;
+	  Gauge Wm = W;
+	  Wp[qij] += eps;
+	  Wm[qij] -= eps;
+	  Wp.update_others();
+	  Wm.update_others();
+	  double detp = K.det(Wp);
+	  double detm = K.det(Wm);
+	  std::cout << "norm = " << dk[qij] - (detp-detm)/(2.0*eps)/det << std::endl;
+	}
+      }
+    }
+  }
+
+
+
+
+  MR corr = MR::Zero(K.N, K.N);
+  const int nmax=1000000;
+  for(int n=0; n<nmax; n++){
+    Force p = K.gen( W, rng );
+    for(int i=0; i<K.N; i++) for(int j=0; j<K.N; j++) corr(i,j) += p[i]*p[j];
+  }
+  corr /= nmax;
+
+  std::cout << "corr = " << std::endl
+	    << corr << std::endl << std::endl;
+
+  // std::cout << "K(W) = " << std::endl
+  // 	    << K.matrix(W) << std::endl << std::endl;
+  std::cout << "K(W)^-1 = " << std::endl
+	    << K.matrix(W).inverse() << std::endl << std::endl;
+
+  std::cout << "diff = " << std::endl
+	    << K.matrix(W).inverse() - corr << std::endl << std::endl;
+
+
+
+
+
+  // { // dHdp
+  //   Force p = K.gen( W, rng );
+  //   const Force dHdp = hmc.dHdp( p, W );
+  //   const double eps = 1.0e-5;
+
+  //   for(int i=0; i<2*Nc*Nc; i++){
+  //     std::cout << dHdp[i] << std::endl;
+
+  //     Force pp = p;
+  //     Force pm = p;
+  //     pp[i] += eps;
+  //     pm[i] -= eps;
+
+  //     std::cout << ( hmc.H(pp, W)-hmc.H(pm, W) )/(2.0*eps) << std::endl;
+  //   }
+  // }
+
+  // { // dHdW
+  //   Force p = K.gen( W, rng );
+  //   const Force dHdW = md.dHdW( p, W );
+  //   const double eps = 1.0e-5;
+
+  //   const Force dS = S.d(W);
+
+  //   for(int qij=0; qij<2*Nc*Nc; qij++){
+  //     std::cout << dHdW[qij] << std::endl;
+
+  //     Gauge Wp = W;
+  //     Gauge Wm = W;
+  //     Wp[qij] += eps;
+  //     Wm[qij] -= eps;
+  //     Wp.update_others();
+  //     Wm.update_others();
+
+  //     std::cout << ( md.H(p, Wp) - md.H(p, Wm) )/(2.0*eps) << std::endl;
+  //   }
+
+  //   std::cout << "dp = "
+  // 	      << (-0.5*md.tau * md.dHdW(p, W)).pi.transpose() << std::endl;
+  //   std::cout << "p = "
+  // 	      << p.pi.transpose() << std::endl;
+  //   p = p - 0.5*md.tau * md.dHdW(p, W);
+  //   std::cout << "p = "
+  // 	      << p.pi.transpose() << std::endl;
+  // }
+
+  // W.check_consistency();
+
+
+    {
+      Force p = K.gen( W, rng );
+
+      const double Hinit = md.H(p,W);
+      std::cout << Hinit << std::endl;
+
+      // const double tau = 0.1;
+
+      // std::cout << "step1" << std::endl;
+      // std::cout << "p = " << std::endl
+      // 	      << p.pi.transpose() << std::endl;
+      // p = md.get_phalf( p, W );
+      // std::cout << "p = " << std::endl
+      // 	      << p.pi.transpose() << std::endl;
+      // std::cout << "step2" << std::endl;
+      // W += 0.5 * md.tau * md.dHdp( p, W );
+      // std::cout << "step3" << std::endl;
+      // W = md.get_Wp( p, W );
+      // std::cout << "step4" << std::endl;
+      // p += -0.5*md.tau * md.dHdW(p, W);
+      // std::cout << "step5" << std::endl;
+
+      for(int i=0; i<md.nsteps; i++) md.onestep( p, W );
+      // p += -0.5*tau * hmc.dHdW(p, W);
+      // W += tau * hmc.dHdp(p, W);
+      // p += -0.5*tau * hmc.dHdW(p, W);
+
+      const double Hfin = md.H(p,W);
+      std::cout << Hfin << std::endl;
+
+      const double diff = Hfin-Hinit;
+      std::cout << hmc.tau << "\t" << diff << std::endl;
+    }

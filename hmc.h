@@ -1,74 +1,39 @@
 #pragma once
 
-#include <random>
+// #include <random>
 
-template <class Force, class Gauge, class Action, class Kernel>
+template <class Force, class Gauge, class Integrator, class Rng>
 struct HMC {
-  const Action& S;
-  const Kernel& K;
+  const Integrator& md;
+  Rng& rng;
   const double stot;
   const int nsteps;
   const double tau;
 
-  HMC(const Action& S_, const Kernel& K_,
+  HMC(const Integrator& md_,
+      Rng& rng_,
       const double stot_=1.0, const int nsteps_=10, const int seed_=1)
-    : S(S_)
-    , K(K_)
+    : md(md_)
+    , rng(rng_)
     , stot(stot_)
     , nsteps(nsteps_)
     , tau(stot/nsteps)
-  {
-  }
-
-  double H( const Force& pi, const Gauge& W ) const {
-    double res = 0.0;
-    res += 0.5 * K(pi, W);
-    res += S(W);
-    res -= 0.5 * std::log( K.det(W) );
-    return res;
-  }
-
-  Force dHdp( const Force& p, const Gauge& W ) const { return K.act( W, p ); }
-
-  Force dHdW( const Force& p, const Gauge& W ) const {
-    Force res = S.d(W);
-    res += 0.5 * K.d(p, W);
-    res -= 0.5 * K.det_log_d(W);
-    return res;
-  }
-  
-  // void leapfrog_explicit_singlestep( Force& pi, Gauge& W ) const {
-  //   pi += -0.5*tau * S.d(W);
-  //   W += tau * pi;
-  //   pi += -0.5*tau * S.d(W);
-  // }
-  void leapfrog_explicit_singlestep( Force& p, Gauge& W ) const {
-    p += -0.5*tau * dHdW(p, W);
-    W += tau * dHdp(p, W);
-    p += -0.5*tau * dHdW(p, W);
-  }
-
-  void leapfrog_explicit( Force& pi, Gauge& W ) const {
-    for(int n=0; n<nsteps; n++) leapfrog_explicit_singlestep(pi,W);
-  }
+  {}
 
   void run( Gauge& W0,
 	    double& r,
 	    double& dH,
 	    bool& is_accept,
-	    double (*pi_init)(),
-	    double (*uniform)(),
 	    const bool no_reject = false ) {
-    Force pi(W0.Nc);
-    pi.rand( pi_init );
+    Force p = md.K.gen( W0, rng );
     Gauge W( W0 );
-    const double h0 = H(pi, W);
-    leapfrog_explicit( pi, W );
-    const double h1 = H(pi, W);
+    const double h0 = md.H(p, W);
+    for(int i=0; i<nsteps; i++) md.onestep( p, W );
+    const double h1 = md.H(p, W);
 
     dH = h1-h0;
     r = std::min( 1.0, std::exp(-dH) );
-    const double a = uniform();
+    const double a = rng.uniform();
     if( a < r || no_reject ){
       W0 = W;
       is_accept=true;
