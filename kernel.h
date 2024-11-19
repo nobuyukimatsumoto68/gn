@@ -12,7 +12,7 @@
 */
 
 
-struct TrivialKernel { // Force = ForceSingleLink, Gauge = LinkConfig
+struct TrivialKernel {
   using Force = ForceSingleLink;
   using Gauge = LinkConfig;
   using Rng = SingleRng;
@@ -30,11 +30,11 @@ struct TrivialKernel { // Force = ForceSingleLink, Gauge = LinkConfig
     Force p(Nc);
     for(int i=0; i<p.size(); i++) p[i] = rng.gaussian();
     return p;
-  } // zero
+  }
 };
 
 
-struct IdpWHW { // Force = ForceSingleLink, Gauge = LinkConfig
+struct IdpWHW {
   using Force = ForceSingleLink;
   using Gauge = LinkConfig;
   using Rng = SingleRng;

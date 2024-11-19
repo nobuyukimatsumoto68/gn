@@ -13,10 +13,6 @@ struct SingleRng {
   std::uniform_real_distribution<> dist_01;
   double uniform(){ return dist_01(mt); }
 
-  // double RandReal(const double a=0., const double b=1.0) {
-  //   return (b-a) * uniform() + a;
-  // }
-
   void seed(const int seed) { mt.seed(seed); }
 };
 

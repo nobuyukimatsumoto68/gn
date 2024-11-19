@@ -8,7 +8,7 @@
   void rand();
   Force& operator+=(const Force& rhs);
   friend Force operator*(const double a, Force v);
-  // friend Force operator*(Force v, const double a);
+  friend Force operator-(Force v, const Force& w);
 */
 
 
@@ -41,13 +41,8 @@ struct ForceSingleLink{
     assert(this != &other);
   }
 
-  double square() const { return pi.squaredNorm(); }
+  // double square() const { return pi.squaredNorm(); }
   double norm() const { return pi.norm(); }
-
-  // void rand( const Kernel& kernel, const Rng& rng ){
-  //   // pi = VR::Random(2*Nc*Nc);
-  //   for(int i=0; i<pi.size(); i++) pi(i) = gauss();
-  // } // @@@ make it multivariate Gaussian
 
   Force& operator=(const Force& other) {
     if (this == &other) return *this;
@@ -63,21 +58,22 @@ struct ForceSingleLink{
   double& operator[](const int i) { return pi[i]; }
   int size() const { return pi.size(); }
 
-  ForceSingleLink& operator+=(const ForceSingleLink& rhs){
+  Force& operator+=(const Force& rhs){
+    assert( Nc==rhs.Nc );
     pi += rhs.pi;
     return *this;
   }
-  ForceSingleLink& operator-=(const ForceSingleLink& rhs){
+  friend Force operator+(Force v, const Force& w) { v += w; return v; }
+
+  Force& operator-=(const Force& rhs){
+    assert( Nc==rhs.Nc );
     pi -= rhs.pi;
     return *this;
   }
+  friend Force operator-(Force v, const Force& w) { v -= w; return v; }
 
-  // friend ForceSingleLink operator*(ForceSingleLink v, const double a) { v.pi *= a; return v; }
-  friend ForceSingleLink operator*(const double a, ForceSingleLink v) { v.pi *= a; return v; }
-  friend ForceSingleLink operator*(const MR& mat, ForceSingleLink v) { v.pi = mat*v.pi; return v; }
-  friend ForceSingleLink operator-(ForceSingleLink v, const ForceSingleLink& w) {
-    assert( v.Nc==w.Nc );
-    v.pi -= w.pi;
-    return v; }
-  friend std::ostream& operator<<(std::ostream& os, const ForceSingleLink& v) { os << v.pi; return os; }
+  friend Force operator*(const double a, Force v) { v.pi *= a; return v; }
+  friend Force operator*(const MR& mat, Force v) { v.pi = mat*v.pi; return v; }
+
+  friend std::ostream& operator<<(std::ostream& os, const Force& v) { os << v.pi; return os; }
 };

@@ -21,12 +21,11 @@ double im(const std::complex<double>& c)
 }
 
 
-
 /*
   Gauge objects should have:
   Gauge operator+=(const Force& rhs);
+  friend Gauge operator-(Gauge v, const Gauge& w);
 */
-
 
 
 struct LinkConfig { // Force=ForceSingleLink
@@ -68,8 +67,6 @@ struct LinkConfig { // Force=ForceSingleLink
     assert(Nc>=2);
   }
 
-
-  // copy assignment
   LinkConfig& operator=(const LinkConfig& other) {
     if (this == &other) return *this;
 
@@ -83,7 +80,8 @@ struct LinkConfig { // Force=ForceSingleLink
     return *this;
   }
 
-  LinkConfig& operator+=(const ForceSingleLink& f) {
+  Gauge& operator+=(const Force& f) {
+    assert(Nc==f.Nc);
     VR dwr = f.pi.segment(0, Nc*Nc);
     VR dwi = f.pi.segment(Nc*Nc, Nc*Nc);
     W += Eigen::Map<MR>( dwr.data(), Nc, Nc );
@@ -91,6 +89,33 @@ struct LinkConfig { // Force=ForceSingleLink
     update_others();
     return *this;
   }
+  friend Gauge operator+(Gauge v, const Force& w) { v += w; return v; }
+
+  Gauge& operator-=(const Force& f) {
+    assert(Nc==f.Nc);
+    VR dwr = f.pi.segment(0, Nc*Nc);
+    VR dwi = f.pi.segment(Nc*Nc, Nc*Nc);
+    W -= Eigen::Map<MR>( dwr.data(), Nc, Nc );
+    W -= I*Eigen::Map<MR>( dwi.data(), Nc, Nc );
+    update_others();
+    return *this;
+  }
+  friend Gauge operator-(Gauge v, const Force& w) { v -= w; return v; }
+
+  Gauge& operator+=(const Gauge& rhs) {
+    assert(Nc==rhs.Nc);
+    W += rhs.W;
+    update_others();
+    return *this;
+  }
+  friend Gauge operator+(Gauge v, const Gauge& w) { v += w; return v; }
+
+  Gauge& operator-=(const Gauge& rhs) {
+    W -= rhs.W;
+    update_others();
+    return *this;
+  }
+  friend Gauge operator-(Gauge v, const Gauge& w) { v -= w; return v; }
 
   inline MC id() const { return MC::Identity(Nc,Nc); }
   inline Complex u1( const double alpha ) const { return std::exp(I*alpha); }
@@ -115,12 +140,6 @@ struct LinkConfig { // Force=ForceSingleLink
     else assert( false );
   }
 
-  void get_ij( int& i, int& j, const int ij ) const {
-    assert(ij<Nc*Nc);
-    j=ij%Nc;
-    i=(ij-j+1)/Nc;
-  }
-
   double operator[](const int qij) const {
     int q,i,j;
     get_qij( q,i,j, qij );
@@ -143,13 +162,6 @@ struct LinkConfig { // Force=ForceSingleLink
     return res;
   }
 
-  // void randomize( const std::function<double()>& f ){
-  //   for(int i=0; i<Nc; i++){
-  //     for(int j=0; j<Nc; j++){
-  // 	W(i, j) = f() + I*f();
-  //     }}
-  //   update_others();
-  // }
   void randomize( const std::function<double()>& f1,
 		  const std::function<double()>& f2){
     for(int i=0; i<Nc; i++){
@@ -197,8 +209,8 @@ struct LinkConfig { // Force=ForceSingleLink
 
 
   void decomposition(){
-    Eigen::JacobiSVD<MC> svd;
-    // Eigen::BDCSVD<MC> svd;
+    // Eigen::JacobiSVD<MC> svd;
+    Eigen::BDCSVD<MC> svd;
     svd.compute(W, Eigen::ComputeFullU | Eigen::ComputeFullV); // U S V^\dagger
     Phi = svd.matrixU() * svd.singularValues().asDiagonal() * svd.matrixU().adjoint();
     MC Omega = svd.matrixU() * svd.matrixV().adjoint();
@@ -257,20 +269,6 @@ struct LinkConfig { // Force=ForceSingleLink
     return res;
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const LinkConfig& v){ os << v.W; return os; }
-  friend Gauge operator-(Gauge v, const Gauge& w) {
-    v.W -= w.W;
-    v.update_others();
-    return v;
-  }
-  friend Gauge operator+(Gauge v, const Gauge& w) {
-    v.W += w.W;
-    v.update_others();
-    return v;
-  }
-  friend Gauge operator+(Gauge v, const Force& w) {
-    v += w;
-    return v;
-  }
+  friend std::ostream& operator<<(std::ostream& os, const Gauge& v){ os << v.W; return os; }
 
 };

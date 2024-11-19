@@ -1,5 +1,12 @@
 #pragma once
 
+
+/*
+  Integrator objects need to inherit MDBase and to have:
+  onestep( Force& p, Gauge& W ) const;
+*/
+
+
 template <class Force, class Gauge, class Action, class Kernel>
 struct MDBase {
   const Action& S;
@@ -83,18 +90,13 @@ public:
   }
 
   Gauge get_Wp( const Force& ph, const Gauge& Wh, const double TOL=1.0e-10 ) const {
-    // Gauge Wp = Wh + 0.5 * tau * this->dHdp( ph, Wh );
-    Gauge Wp = Wh + 0.5 * tau * this->dHdp( ph, Wh );
-
-    Gauge Wold = Wh;
+    Gauge Wp( Wh + 0.5 * tau * this->dHdp( ph, Wh ) );
+    Gauge Wold( Wh );
  
     double norm = (Wp-Wold).norm();
     while( norm>TOL ){
       Wold = Wp;
-
-      // Wp = Wh;
       Wp = Wh + 0.5 * tau * this->dHdp( ph, Wp );
-
       norm = (Wp-Wold).norm();
     }
     return Wp;

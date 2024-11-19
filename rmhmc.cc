@@ -28,7 +28,6 @@ int main( int argc, char *argv[] ){
   using Gauge = LinkConfig;
   using Action = WilsonGaussianAction;
   using Kernel = IdpWHW;
-  // using Integrator = ExplicitLeapfrog<Force,Gauge,Action,Kernel>;
   using Integrator = ImplicitLeapfrog<Force,Gauge,Action,Kernel>;
   using Rng = SingleRng;
   using HMC = HMC<Force,Gauge,Integrator,Rng>;
@@ -51,8 +50,6 @@ int main( int argc, char *argv[] ){
 
   // ------------------
 
-  // using Kernel = TrivialKernel;
-  // Kernel K(Nc);
   const double alpha = 0.05;
   Kernel K(Nc, alpha);
 
@@ -84,33 +81,6 @@ int main( int argc, char *argv[] ){
   const int nsteps = 8;
   Integrator md(S, K, stot, nsteps);
   HMC hmc(md, rng, stot, nsteps);
-
-  // for(int nsteps=10; nsteps<400; nsteps*=2){
-  //   const double stot = 1.0;
-  //   //const int nsteps = 40;
-  //   Integrator md(S, K, stot, nsteps);
-  //   HMC hmc(md, rng, stot, nsteps);
-
-  //   rng.seed( seed );
-  //   W.randomize( [&](){ return rng.gaussian(); },
-  // 		 [&](){ return rng.gaussian(); }
-  // 		 );
-
-
-  //   {
-  //     Force p = K.gen( W, rng );
-
-  //     const double Hinit = md.H(p,W);
-  //     // std::cout << Hinit << std::endl;
-  //     for(int i=0; i<md.nsteps; i++) md.onestep( p, W );
-  //     const double Hfin = md.H(p,W);
-  //     // std::cout << Hfin << std::endl;
-  //     const double diff = Hfin-Hinit;
-  //     std::cout << hmc.tau << "\t" << diff << std::endl;
-  //   }
-  // }
-
-
 
   {
     int ntherm=1000;

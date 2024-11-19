@@ -715,3 +715,37 @@
       const double diff = Hfin-Hinit;
       std::cout << hmc.tau << "\t" << diff << std::endl;
     }
+
+
+
+  // for(int nsteps=10; nsteps<400; nsteps*=2){
+  //   const double stot = 1.0;
+  //   //const int nsteps = 40;
+  //   Integrator md(S, K, stot, nsteps);
+  //   HMC hmc(md, rng, stot, nsteps);
+
+  //   rng.seed( seed );
+  //   W.randomize( [&](){ return rng.gaussian(); },
+  // 		 [&](){ return rng.gaussian(); }
+  // 		 );
+
+
+  //   {
+  //     Force p = K.gen( W, rng );
+
+  //     const double Hinit = md.H(p,W);
+  //     // std::cout << Hinit << std::endl;
+  //     for(int i=0; i<md.nsteps; i++) md.onestep( p, W );
+  //     const double Hfin = md.H(p,W);
+  //     // std::cout << Hfin << std::endl;
+  //     const double diff = Hfin-Hinit;
+  //     std::cout << hmc.tau << "\t" << diff << std::endl;
+  //   }
+  // }
+
+
+
+  // using Integrator = ExplicitLeapfrog<Force,Gauge,Action,Kernel>;
+  // if (argc>2){ beta = atof(argv[2]); }
+  // using Kernel = TrivialKernel;
+  // Kernel K(Nc);

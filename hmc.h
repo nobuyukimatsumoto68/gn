@@ -1,6 +1,5 @@
 #pragma once
 
-// #include <random>
 
 template <class Force, class Gauge, class Integrator, class Rng>
 struct HMC {
