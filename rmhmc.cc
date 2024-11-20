@@ -26,7 +26,8 @@ int main( int argc, char *argv[] ){
 
   using Force = ForceSingleLink;
   using Gauge = LinkConfig;
-  using Action = WilsonGaussianAction;
+  // using Action = WilsonGaussianAction;
+  using Action = WilsonGaussianAndDet;
   using Kernel = IdpWHW;
   using Integrator = ImplicitLeapfrog<Force,Gauge,Action,Kernel>;
   using Rng = SingleRng;
@@ -45,8 +46,9 @@ int main( int argc, char *argv[] ){
 
   double beta = 3.3;
   if (argc>2){ beta = atof(argv[2]); }
-  const double lambda = 4.0;
-  Action S(beta, lambda);
+  const double lambda = 2.0;
+  const double kappa = 3.0;
+  Action S(beta, lambda, kappa);
 
   // ------------------
 
@@ -87,8 +89,9 @@ int main( int argc, char *argv[] ){
 
   // ------------------
 
+
   const double stot = 1.0;
-  const int nsteps = 10;
+  const int nsteps = 16;
   Integrator md(S, K, stot, nsteps);
   HMC hmc(md, rng, stot, nsteps);
 
@@ -98,7 +101,7 @@ int main( int argc, char *argv[] ){
     if (argc>3){ ntherm = atoi(argv[3]); }
     if (argc>4){ niter = atoi(argv[4]); }
     const int interval = 10;
-    const int binsize = 4;
+    const int binsize = 10;
 
     double dH, r;
     bool is_accept;
@@ -108,13 +111,13 @@ int main( int argc, char *argv[] ){
     for(int n=0; n<niter; n++){
       hmc.run(W, r, dH, is_accept);
       std::clog << "n = " << n
-		<< ", r = " << r
-		<< ", dH = " << dH
-		<< ", is_accept = " << is_accept
-		<< std::endl;
+        	<< ", r = " << r
+        	<< ", dH = " << dH
+        	<< ", is_accept = " << is_accept
+        	<< std::endl;
 
       if(n%interval==0){
-	for(auto pt : obslist) {
+        for(auto pt : obslist) {
           pt->meas( W );
           std::cout << pt->description << "\t"
                     << *(pt->v.end()-1) << std::endl;
@@ -127,8 +130,8 @@ int main( int argc, char *argv[] ){
       double mn, er;
       pt->jackknife( mn, er, binsize );
       std::cout << pt->description << "\t\t"
-		<< pt->param << "\t"
-		<< mn << "\t" << er << "\t" << pt->exact <<  std::endl;
+        	<< pt->param << "\t"
+        	<< mn << "\t" << er << "\t" << pt->exact <<  std::endl;
 
       // ------------------------
       
@@ -137,9 +140,9 @@ int main( int argc, char *argv[] ){
       if(!of) assert(false);
       of << std::scientific << std::setprecision(15);
       of << pt->param << "\t"
-	 << mn << "\t"
-	 << er << "\t"
-	 << pt->exact << std::endl;
+         << mn << "\t"
+         << er << "\t"
+         << pt->exact << std::endl;
     }
   }
 

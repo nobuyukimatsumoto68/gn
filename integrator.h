@@ -91,7 +91,8 @@ public:
 
   Gauge get_Wp( const Force& ph, const Gauge& Wh, const double TOL=1.0e-10 ) const {
     // std::clog << "Wh = " << Wh << std::endl;
-    Gauge Wp( Wh + 0.5 * tau * this->dHdp( ph, Wh ) );
+    Gauge Wtmp( Wh + 0.5 * tau * this->dHdp( ph, Wh ) );
+    Gauge Wp( Wh + 0.25 * tau * ( this->dHdp( ph, Wtmp ) + this->dHdp( ph, Wh ) ) );
     // std::clog << "dHdp = " << this->dHdp( ph, Wh ) << std::endl;
     Gauge Wold( Wh );
 

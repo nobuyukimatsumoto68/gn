@@ -749,3 +749,45 @@
   // if (argc>2){ beta = atof(argv[2]); }
   // using Kernel = TrivialKernel;
   // Kernel K(Nc);
+
+
+  {
+    // std::cout << "S = " << S(ell) << std::endl;
+
+    {
+      const int i=0;
+      const int j=0;
+      std::cout << "dS = " << std::endl
+                << S.d(W) << std::endl;
+    }
+    std::cout << "dS (check) = " << std::endl;
+    for(int i=0; i<W.Nc; i++){
+      for(int j=0; j<W.Nc; j++){
+        const double eps = 1.0e-5;
+        LinkConfig WP = W;
+        LinkConfig WM = W;
+
+        WP.W(i,j) += eps;
+        WP.update_others();
+        WM.W(i,j) -= eps;
+        WM.update_others();
+
+        std::cout << ( S(WP)-S(WM) )/(2.0*eps) << " ";
+      }
+    }
+    for(int i=0; i<W.Nc; i++){
+      for(int j=0; j<W.Nc; j++){
+        const double eps = 1.0e-5;
+        LinkConfig WP = W;
+        LinkConfig WM = W;
+
+        WP.W(i,j) += I*eps;
+        WP.update_others();
+        WM.W(i,j) -= I*eps;
+        WM.update_others();
+
+        std::cout << ( S(WP)-S(WM) )/(2.0*eps) << " ";
+      }
+    }
+    std::cout << std::endl;
+  }
