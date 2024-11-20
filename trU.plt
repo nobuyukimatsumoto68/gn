@@ -9,6 +9,7 @@ set title font "Liberation Sans,22"
 # set rmargin 0.
 # set tmargin 0.
 # set bmargin 0.
+# set xrange [0.8:2.2]
 # set yrange [0.0:1.0]
 # set zrange [-6.0:6.0]
 # set view 74, 206
@@ -17,8 +18,9 @@ set title font "Liberation Sans,22"
 set xlabel "x"
 set ylabel "y"
 # set zlabel ""
-set logscale x
-set logscale y
-plot "scaling.dat" using 1:(abs($2))
-replot [0.001:0.1] x**2
+# set logscale x
+# set logscale y
+plot "obs/retrU.dat" using 1:2:3 with errorbars
+replot "obs/retrU.dat" using 1:4
+# replot [0.001:0.1] x**2
 # set output

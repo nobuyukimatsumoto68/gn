@@ -90,23 +90,32 @@ public:
   }
 
   Gauge get_Wp( const Force& ph, const Gauge& Wh, const double TOL=1.0e-10 ) const {
+    // std::clog << "Wh = " << Wh << std::endl;
     Gauge Wp( Wh + 0.5 * tau * this->dHdp( ph, Wh ) );
+    // std::clog << "dHdp = " << this->dHdp( ph, Wh ) << std::endl;
     Gauge Wold( Wh );
- 
+
     double norm = (Wp-Wold).norm();
     while( norm>TOL ){
       Wold = Wp;
       Wp = Wh + 0.5 * tau * this->dHdp( ph, Wp );
+      // std::clog << "dHdp = " << this->dHdp( ph, Wp ) << std::endl;
+      // std::clog << "Wp = " << Wp << std::endl;
       norm = (Wp-Wold).norm();
     }
     return Wp;
   }
 
   void onestep( Force& p, Gauge& W ) const {
+    // std::clog << "W1 = " << W << std::endl;
     p = get_phalf( p, W );
+    // std::clog << "W2 = " << W << std::endl;
     W += 0.5 * tau * this->dHdp( p, W );
+    // std::clog << "W3 = " << W << std::endl;
     W = get_Wp( p, W );
+    // std::clog << "W4 = " << W << std::endl;
     p += -0.5*tau * this->dHdW(p, W);
+    // std::clog << "W5 = " << W << std::endl;
   }
 
 };

@@ -45,12 +45,12 @@ int main( int argc, char *argv[] ){
 
   double beta = 3.3;
   if (argc>2){ beta = atof(argv[2]); }
-  const double lambda = 16.0;
+  const double lambda = 4.0;
   Action S(beta, lambda);
 
   // ------------------
 
-  const double alpha = 0.04;
+  const double alpha = 0.001;
   Kernel K(Nc, alpha);
 
   // ------------------
@@ -63,9 +63,15 @@ int main( int argc, char *argv[] ){
   const double lambda_F = 2.0 * std::cyl_bessel_i( 2, beta ) / beta;
   double exact = 0.0;
   if( std::abs(lambda_0)>1.0e-14 ) exact = 2.0*lambda_F/lambda_0;
+  std::cout << "exact = " << exact << std::endl;
 
   Obs<double, Gauge> retrU( "retrU", beta, [](const Gauge& W ){ return W.U.trace().real(); }, exact );
   obslist.push_back(&retrU);
+  Obs<double, Gauge> phi_norm( "trPhisq", lambda, [](const Gauge& W ){
+    return ( W.Phi - W.id() ).squaredNorm();
+  }, 0.0 );
+  obslist.push_back(&phi_norm);
+
 
   // ------------------
 
@@ -78,7 +84,7 @@ int main( int argc, char *argv[] ){
   // ------------------
 
   const double stot = 1.0;
-  const int nsteps = 20;
+  const int nsteps = 10;
   Integrator md(S, K, stot, nsteps);
   HMC hmc(md, rng, stot, nsteps);
 
@@ -87,7 +93,8 @@ int main( int argc, char *argv[] ){
     int niter=10000;
     if (argc>3){ ntherm = atoi(argv[3]); }
     if (argc>4){ niter = atoi(argv[4]); }
-    const int interval=10;
+    const int interval = 10;
+    const int binsize = 4;
 
     double dH, r;
     bool is_accept;
@@ -103,14 +110,17 @@ int main( int argc, char *argv[] ){
 		<< std::endl;
 
       if(n%interval==0){
-	for(auto pt : obslist) pt->meas( W );
+	for(auto pt : obslist) {
+          pt->meas( W );
+          std::cout << pt->description << "\t"
+                    << *(pt->v.end()-1) << std::endl;
+        }
       }
     }
 
     std::cout << "# beta \t mean \t err \t exact" << std::endl;
     for(auto pt : obslist){
       double mn, er;
-      const int binsize = 20;
       pt->jackknife( mn, er, binsize );
       std::cout << pt->description << "\t\t"
 		<< pt->param << "\t"

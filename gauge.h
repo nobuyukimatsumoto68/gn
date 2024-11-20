@@ -203,7 +203,10 @@ struct LinkConfig { // Force=ForceSingleLink
   void check_consistency( const double TOL=1.0e-10 ) const {
     const MC check = u()*Phi*U;
     const double norm = (check-W).norm()/(std::sqrt(2.0)*Nc);
-    if(norm > TOL) std::clog << "norm = " << norm << std::endl;
+    if(norm > TOL) {
+      std::clog << "norm = " << norm << std::endl;
+      std::clog << "det Phi = " << Phi.determinant() << std::endl;
+    }
     assert( norm<TOL );
   }
 
@@ -212,6 +215,16 @@ struct LinkConfig { // Force=ForceSingleLink
     // Eigen::JacobiSVD<MC> svd;
     Eigen::BDCSVD<MC> svd;
     svd.compute(W, Eigen::ComputeFullU | Eigen::ComputeFullV); // U S V^\dagger
+    {
+      MC check = svd.matrixU() * svd.singularValues().asDiagonal() * svd.matrixV().adjoint();
+      double norm = (check-W).norm();
+      if(norm>1.0e-10) {
+        std::clog << "W = " << W << std::endl;
+        std::clog << "det W = " << W.determinant() << std::endl;
+        std::clog << "norm = " << norm << std::endl;
+      }
+      assert( norm<1.0e-10 );
+    }
     Phi = svd.matrixU() * svd.singularValues().asDiagonal() * svd.matrixU().adjoint();
     MC Omega = svd.matrixU() * svd.matrixV().adjoint();
     Omega *= u1(-theta);
