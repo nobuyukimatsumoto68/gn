@@ -3,14 +3,15 @@
 make
 
 ntherm=1000
-niter=100000
+niter=10000
 
-outfile="wilson_su3.dat"
+# outfile="wilson_su3.dat"
 
-> $outfile
-for i in {1..20..1}
+# > $outfile
+# for i in {1..3}
+for ((i=0; i<4; i++))
 do
-    lambda=$(echo "0.0 + $i*0.2" | bc -l)
+    lambda=$(echo "1.0 + $i*1.0" | bc -l)
     date=$(date '+%Y%m%s%N')
     seed=$(($date % 100))
     ./b.out $seed $lambda $ntherm $niter # | tee >> $outfile

@@ -76,7 +76,7 @@ int main( int argc, char *argv[] ){
   Obs<double, Gauge> phi_det_abs( "absdetPhi", lambda, [](const Gauge& W ){
     return std::abs(W.Phi.determinant());
   }, 0.0 );
-  obslist.push_back(&phi_norm);
+  obslist.push_back(&phi_det_abs);
 
 
   // ------------------
