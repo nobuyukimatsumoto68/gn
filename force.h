@@ -1,5 +1,7 @@
 #pragma OConce
 
+#include <Eigen/Dense>
+
 /*
   Force objects should have:
 
@@ -15,11 +17,17 @@
 struct ForceSingleLink{
   using Force = ForceSingleLink;
 
+  using Complex = std::complex<double>;
+  using MC = Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  using MR = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  using VC = Eigen::VectorXcd;
+  using VR = Eigen::VectorXd;
+
   const int Nc;
   const int n;
   VR pi;
 
-  ForceSingleLink(const int Nc_, const int seed_=2)
+  ForceSingleLink(const int Nc_)
     : Nc(Nc_)
     , n(2*Nc*Nc)
   {
@@ -76,4 +84,20 @@ struct ForceSingleLink{
   friend Force operator*(const MR& mat, Force v) { v.pi = mat*v.pi; return v; }
 
   friend std::ostream& operator<<(std::ostream& os, const Force& v) { os << v.pi; return os; }
+};
+
+
+
+
+struct Force2D {
+  using Force=Force2D;
+
+  const Lattice& lattice;
+  std::vector<ForceSingleLink> field;
+
+  Force2D( const Lattice& lattice, const int Nc )
+    : lattice( lattice )
+    , field( lattice.n_links(), Nc )
+  {}
+
 };

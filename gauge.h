@@ -3,22 +3,9 @@
 #include <cassert>
 #include <cmath>
 #include <vector>
+#include <Eigen/Dense>
 
-
-double& re(std::complex<double>& c)
-{ return reinterpret_cast<double (&)[2]>(c)[0]; }
-
-double& im(std::complex<double>& c)
-{ return reinterpret_cast<double (&)[2]>(c)[1]; }
-
-double re(const std::complex<double>& c)
-{
-  return reinterpret_cast<const double (&)[2]>(c)[0];
-}
-double im(const std::complex<double>& c)
-{
-  return reinterpret_cast<const double (&)[2]>(c)[1];
-}
+#include "lattice.h"
 
 
 /*
@@ -31,6 +18,19 @@ double im(const std::complex<double>& c)
 struct LinkConfig { // Force=ForceSingleLink
   using Gauge=LinkConfig;
   using Force=ForceSingleLink;
+
+  using Complex = std::complex<double>;
+  static constexpr Complex I = Complex(0.0, 1.0);
+
+  using MC = Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  using MR = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  using VC = Eigen::VectorXcd;
+  using VR = Eigen::VectorXd;
+
+  double& re(std::complex<double>& c){ return reinterpret_cast<double (&)[2]>(c)[0]; }
+  double& im(std::complex<double>& c){ return reinterpret_cast<double (&)[2]>(c)[1]; }
+  double re(const std::complex<double>& c) const { return reinterpret_cast<const double (&)[2]>(c)[0]; }
+  double im(const std::complex<double>& c) const { return reinterpret_cast<const double (&)[2]>(c)[1]; }
 
   const int Nc;
   const int NA;
@@ -283,5 +283,58 @@ struct LinkConfig { // Force=ForceSingleLink
   }
 
   friend std::ostream& operator<<(std::ostream& os, const Gauge& v){ os << v.W; return os; }
+
+};
+
+
+
+
+struct Dim2Gauge {
+  static constexpr int dim = 2;
+  using Idx = std::size_t;
+  using Coord=std::array<int, dim>;
+  using M=LinkConfig;
+  using Gauge=Dim2Gauge;
+  using Force=Force2D;
+  using Rng = ParallelRng;
+
+  using Complex = std::complex<double>;
+  static constexpr Complex I = Complex(0.0, 1.0);
+
+  const Lattice& lattice;
+  std::vector<M> field;
+  const int Nc;
+
+  Dim2Gauge( const Lattice& lattice, const int Nc )
+    : lattice( lattice )
+    , field( lattice.n_links(), Nc )
+    , Nc(Nc)
+  {}
+
+  inline M operator[](const Idx& i) const { return field[i]; }
+  inline M& operator[](const Idx& i) { return field[i]; }
+
+  inline M operator()(const Idx& i, const int mu) const { return field[dim*i+mu]; }
+  inline M& operator()(const Idx& i, const int mu) { return field[dim*i+mu]; }
+
+  inline M operator()(const Coord& x, const int mu) const { return this->operator()(lattice.idx(x),mu); }
+  inline M& operator()(const Coord& x, const int mu) { return this->operator()(lattice.idx(x),mu); }
+
+  // auto begin() {return field.begin(); }
+  // auto end() {return field.end(); }
+  // auto begin() const {return field.begin(); }
+  // auto end() const {return field.end(); }
+
+  void randomize( Rng& rng ){
+    for(auto it = field.begin(); it!=field.end(); it++ ){
+      const int il = std::distance( field.begin(), it );
+      for(int i=0; i<Nc; i++){
+	for(int j=0; j<Nc; j++){
+	  (*it)(i, j) = rng.gaussian_link( il ) + I * rng.gaussian_link( il );
+	}}
+      it->update_others();
+    }
+  }
+
 
 };

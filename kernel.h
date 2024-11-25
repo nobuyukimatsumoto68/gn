@@ -39,6 +39,13 @@ struct IdpWHW {
   using Gauge = LinkConfig;
   using Rng = SingleRng;
 
+  using Complex = std::complex<double>;
+  using MC = Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  using MR = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  using VC = Eigen::VectorXcd;
+  using VR = Eigen::VectorXd;
+
+
   const int Nc;
   const int N;
   const double alpha;

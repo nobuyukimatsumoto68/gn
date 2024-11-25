@@ -47,7 +47,7 @@ int main( int argc, char *argv[] ){
   double beta = 3.3;
   if (argc>2){ beta = atof(argv[2]); }
   const double lambda = 2.0;
-  const double kappa = 3.0;
+  const double kappa = 4.0;
   Action S(beta, lambda, kappa);
 
   // ------------------
@@ -69,14 +69,18 @@ int main( int argc, char *argv[] ){
 
   Obs<double, Gauge> retrU( "retrU", beta, [](const Gauge& W ){ return W.U.trace().real(); }, exact );
   obslist.push_back(&retrU);
-  Obs<double, Gauge> phi_norm( "trPhisq", lambda, [](const Gauge& W ){
+  Obs<double, Gauge> phi_norm( "trPhisq", beta, [](const Gauge& W ){
     return ( W.Phi - W.id() ).squaredNorm();
   }, 0.0 );
   obslist.push_back(&phi_norm);
-  Obs<double, Gauge> phi_det_abs( "absdetPhi", lambda, [](const Gauge& W ){
+  Obs<double, Gauge> phi_det_abs( "absdetPhi", beta, [](const Gauge& W ){
     return std::abs(W.Phi.determinant());
   }, 0.0 );
   obslist.push_back(&phi_det_abs);
+  Obs<double, Gauge> detK( "absdetK", beta, [&](const Gauge& W ){
+    return std::abs(K.det(W));
+  }, 0.0 );
+  obslist.push_back(&detK);
 
 
   // ------------------
@@ -91,7 +95,7 @@ int main( int argc, char *argv[] ){
 
 
   const double stot = 1.0;
-  const int nsteps = 16;
+  const int nsteps = 10;
   Integrator md(S, K, stot, nsteps);
   HMC hmc(md, rng, stot, nsteps);
 
@@ -135,14 +139,26 @@ int main( int argc, char *argv[] ){
 
       // ------------------------
       
-      std::ofstream of;
-      of.open( data_path+pt->description+".dat", std::ios::out | std::ios::app);
-      if(!of) assert(false);
-      of << std::scientific << std::setprecision(15);
-      of << pt->param << "\t"
-         << mn << "\t"
-         << er << "\t"
-         << pt->exact << std::endl;
+      {
+	std::ofstream of;
+	of.open( data_path+pt->description+".dat", std::ios::out | std::ios::app);
+	if(!of) assert(false);
+	of << std::scientific << std::setprecision(15);
+	of << pt->param << "\t"
+	   << mn << "\t"
+	   << er << "\t"
+	   << pt->exact << std::endl;
+      }
+
+      // ------------------------
+
+      {
+	std::ofstream of;
+	of.open( data_path+pt->description+std::to_string(pt->param)+"_.dat", std::ios::out | std::ios::app);
+	if(!of) assert(false);
+	of << std::scientific << std::setprecision(15);
+	for(auto iv=pt->v.begin(); iv!=pt->v.end(); ++iv) of << pt->param << "\t" << *iv << std::endl;
+      }
     }
   }
 
