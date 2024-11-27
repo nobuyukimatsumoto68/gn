@@ -20,5 +20,5 @@ set ylabel "y"
 set logscale x
 set logscale y
 plot "scaling.dat" using 1:(abs($2))
-replot [0.001:0.1] x**2
+replot [0.001:0.1] 100.0 * x**2
 # set output

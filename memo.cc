@@ -791,3 +791,382 @@
     }
     std::cout << std::endl;
   }
+
+
+
+
+
+  using Force = Force2D;
+  using Gauge = Dim2Gauge;
+  using Action = WilsonGaussianAndDet2D;
+
+  // using Kernel = IdpWHW;
+  // using Integrator = ImplicitLeapfrog<Force,Gauge,Action,Kernel>;
+  using Rng = ParallelRng;
+  // using HMC = HMC<Force,Gauge,Integrator,Rng>;
+
+  // ---------------
+
+  const Lattice lat( Lattice::Coord{{ 4,4 }} );
+
+  // ---------------
+
+  const int Nc=2;
+  Gauge W(lat, Nc);
+
+  std::vector<Obs<double, Gauge>*> obslist;
+  std::string data_path="./obs/";
+  std::filesystem::create_directory(data_path);
+
+  // ------------------
+
+  double beta = 3.3;
+  if (argc>2){ beta = atof(argv[2]); }
+  const double lambda = 2.0;
+  const double kappa = 4.0;
+  Action S(lat, beta, lambda, kappa);
+
+  // ------------------
+  
+  // const double alpha = 0.001;
+  // Kernel K(Nc, alpha);
+
+  // // ------------------
+
+  Rng rng(lat, 1);
+  W.randomize( rng, 1.0 );
+
+  // {
+  //   // cshift and indexing
+  //   Lattice::Coord x{2,2};
+  //   const int mu = 0;
+  //   std::cout << W( x, -mu-1 )() << std::endl;
+  //   auto x_mmu = lat.cshift( x, -mu-1 );
+  //   std::cout << W( x_mmu, mu )() << std::endl;
+  // }
+  { // a, U
+    const double eps = 1.0e-5;
+
+    Lattice::Coord x{0,0};
+    const int mu = 0;
+    const int nu = 1-mu;
+
+    std::cout << W( x, mu )() << std::endl;
+    std::cout << W( x, mu ).U << std::endl;
+
+    Lattice::Coord x_mnu = lat.cshift( x, -nu-1 );
+
+    using Complex = std::complex<double>;
+    Complex I = Complex(0.0, 1.0);
+
+    // Action::MC plaq1 = S.plaq( W, lat.idx(x) ) + S.plaq( W, lat.idx(x_mnu) );
+    // Action::MC plaq2 = W(x,mu).U * S.staples( W, lat.idx(x), mu );
+    // std::cout << "plaq1 = " << plaq1 << std::endl;
+    // std::cout << "plaq2 = " << plaq2 << std::endl;
+
+    // const Lattice::Coord xp0 = lat.cshift(x, 0);
+    // for(auto elem : xp0) std::cout << elem << " ";
+    // std::cout << std::endl;
+    // const Lattice::Coord xp1 = lat.cshift(x, 1);
+    // for(auto elem : xp1) std::cout << elem << " ";
+    // std::cout << std::endl;
+
+    // std::cout << "first  part = " << W(x,0).U * W(xp0,1).U << std::endl;
+    // std::cout << "second part = " << W(xp1,0).U.adjoint() * W(x,1).U.adjoint() << std::endl;
+
+    for(int a=0; a<W(x,mu).NA; a++){
+      Gauge WP(W);
+      Gauge WM(W);
+
+      WP(x,mu).U = ( I*eps * W(x,mu).t[a]).exp() * W(x,mu).U;
+      WP.update();
+
+      WM(x,mu).U = ( -I*eps * W(x,mu).t[a]).exp() * W(x,mu).U;
+      WM.update();
+
+      // std::cout << ( WP(x,mu).U - WM(x,mu).U ) / (2.0*eps) << std::endl;
+      // std::cout << I * W(x,mu).t[a] * W(x,mu).U << std::endl;
+
+      // std::cout << W(x,mu).W << std::endl;
+      // std::cout << WP(x,mu).W << std::endl;
+      Action::MC dplaq = I * W(x,mu).t[a] * W(x,mu).U * S.staples( W, lat.idx(x), mu );
+      std::cout << "d plaq = " << std::endl
+                << dplaq.trace().real() << std::endl;
+
+      Action::MC p = S.plaq( WP, lat.idx(x) ) + S.plaq( WP, lat.idx(x_mnu) );
+      Action::MC m = S.plaq( WM, lat.idx(x) ) + S.plaq( WM, lat.idx(x_mnu) );
+      // Action::MC p = S.plaq( WP, lat.idx(x) );
+      // Action::MC m = S.plaq( WM, lat.idx(x) );
+
+      // std::cout << "p = " << std::endl
+      //           << p << std::endl;
+      // std::cout << "m = " << std::endl
+      //           << m << std::endl;
+
+      Action::MC diff = (p-m)/(2.0*eps);
+      // std::cout << "diff = " << std::endl
+      //           << diff << std::endl;
+      std::cout << "check = " << std::endl
+                << diff.trace().real() << std::endl;
+
+      std::cout << "dS = " << S.D(W, a, lat.idx(x), mu) << std::endl;
+      std::cout << "check " << ( S(WP)-S(WM) )/(2.0*eps) << std::endl;
+    }
+  }
+
+
+
+
+
+
+  // { // a, U
+  //   const double eps = 1.0e-5;
+
+  //   Lattice::Coord x{3,1};
+  //   const int mu = 1;
+  //   const int nu = 1-mu;
+  //   Lattice::Coord x_mnu = lat.cshift( x, -nu-1 );
+
+  //   using Complex = std::complex<double>;
+  //   Complex I = Complex(0.0, 1.0);
+
+  //   for(int a=0; a<W(x,mu).NA; a++){
+  //     Gauge WP(W);
+  //     Gauge WM(W);
+
+  //     WP(x,mu).U = ( I*eps * W(x,mu).t[a]).exp() * W(x,mu).U;
+  //     WP.update();
+
+  //     WM(x,mu).U = ( -I*eps * W(x,mu).t[a]).exp() * W(x,mu).U;
+  //     WM.update();
+
+  //     Action::MC dplaq = I * W(x,mu).t[a] * W(x,mu).U * S.staples( W, lat.idx(x), mu );
+  //     std::cout << "d plaq = " << std::endl
+  //               << dplaq.trace().real() << std::endl;
+
+  //     Action::MC p = S.plaq( WP, lat.idx(x) ) + S.plaq( WP, lat.idx(x_mnu) );
+  //     Action::MC m = S.plaq( WM, lat.idx(x) ) + S.plaq( WM, lat.idx(x_mnu) );
+  //     Action::MC diff = (p-m)/(2.0*eps);
+  //     std::cout << "check = " << std::endl
+  //               << diff.trace().real() << std::endl;
+
+  //     std::cout << "dS = " << S.D(W, lat.idx(x), mu, a) << std::endl;
+  //     std::cout << "check " << ( S(WP)-S(WM) )/(2.0*eps) << std::endl;
+  //   }
+  // }
+  // { // a, Phi
+  //   const double eps = 1.0e-5;
+
+  //   Lattice::Coord x{0,0};
+  //   const int mu = 0;
+  //   const int nu = 1-mu;
+  //   Lattice::Coord x_mnu = lat.cshift( x, -nu-1 );
+
+  //   using Complex = std::complex<double>;
+  //   Complex I = Complex(0.0, 1.0);
+
+  //   for(int a=0; a<W(x,mu).NA; a++){
+  //     Gauge WP(W);
+  //     Gauge WM(W);
+
+  //     WP(x,mu).Phi = W(x,mu).Phi + eps*W(x,mu).t[a];
+  //     WP.update();
+
+  //     WM(x,mu).Phi = W(x,mu).Phi - eps*W(x,mu).t[a];
+  //     WM.update();
+
+  //     std::cout << "dS = " << S.dphi(W, lat.idx(x), mu, a) << std::endl;
+  //     std::cout << "check " << ( S(WP)-S(WM) )/(2.0*eps) << std::endl;
+  //   }
+  //   { // 0, Phi
+  //     const double eps = 1.0e-5;
+
+  //     Lattice::Coord x{0,0};
+  //     const int mu = 0;
+  //     const int nu = 1-mu;
+  //     Lattice::Coord x_mnu = lat.cshift( x, -nu-1 );
+
+  //     using Complex = std::complex<double>;
+  //     Complex I = Complex(0.0, 1.0);
+
+  //     Gauge WP(W);
+  //     Gauge WM(W);
+
+  //     WP(x,mu).Phi = W(x,mu).Phi + eps*W(x,mu).id();
+  //     WP.update();
+
+  //     WM(x,mu).Phi = W(x,mu).Phi - eps*W(x,mu).id();
+  //     WM.update();
+
+  //     std::cout << "dS = " << S.dphi0(W, lat.idx(x), mu) << std::endl;
+  //     std::cout << "check " << ( S(WP)-S(WM) )/(2.0*eps) << std::endl;
+  //   }
+  // }
+
+
+  {
+    const double eps = 1.0e-5;
+
+    Lattice::Coord x{3,1};
+    const int mu = 0;
+    const int nu = 1-mu;
+    using Complex = std::complex<double>;
+    Complex I = Complex(0.0, 1.0);
+
+    {
+      Force ds = S.d(W);
+      std::cout << "dS = " << std::endl
+		<< ds(x,mu) << std::endl;
+    }
+    std::cout << "dS (check) = " << std::endl;
+    for(int i=0; i<W.Nc; i++){
+      for(int j=0; j<W.Nc; j++){
+	Gauge WP(W);
+	Gauge WM(W);
+
+	WP(x,mu)(i,j) += eps;
+	WP.update_others();
+	WM(x,mu)(i,j) -= eps;
+	WM.update_others();
+
+	std::cout << ( S(WP)-S(WM) )/(2.0*eps) << " ";
+      }
+    }
+    for(int i=0; i<W.Nc; i++){
+      for(int j=0; j<W.Nc; j++){
+	Gauge WP(W);
+	Gauge WM(W);
+
+	WP(x,mu)(i,j) += I*eps;
+	WP.update_others();
+	WM(x,mu)(i,j) -= I*eps;
+	WM.update_others();
+
+	std::cout << ( S(WP)-S(WM) )/(2.0*eps) << " ";
+      }
+    }
+    std::cout << std::endl;
+  }
+
+
+
+
+  Lattice::Coord x{3,1};
+  const int mu = 0;
+
+  {
+    const double eps = 1.0e-5;
+    const Force f = K.gen(W, rng);
+    // std::cout << "f = " << std::endl;
+    // for(auto elem : f.field) std::cout << elem << std::endl;
+    Force dk = K.d(f, W);
+    // std::cout << "dk = " << std::endl;
+    // for(auto elem : dk.field) std::cout << elem << std::endl;
+
+    for(int qij=0; qij<2*Nc*Nc; qij++){
+      Gauge Wp(W);
+      Gauge Wm(W);
+      Wp(x,mu)[qij] += eps;
+      Wm(x,mu)[qij] -= eps;
+      Wp.update_others();
+      Wm.update_others();
+
+      double Kp = K(f, Wp);
+      double Km = K(f, Wm);
+      std::cout << "norm = " << dk(x,mu)[qij] - (Kp-Km)/(2.0*eps) << std::endl;
+    }
+  }
+
+
+  {
+    Force dk = K.logdet_d(W);
+    const double eps = 1.0e-5;
+
+    for(int qij=0; qij<2*Nc*Nc; qij++){
+      Gauge Wp(W);
+      Gauge Wm(W);
+      Wp(x,mu)[qij] += eps;
+      Wm(x,mu)[qij] -= eps;
+      Wp.update_others();
+      Wm.update_others();
+      double logdetp = K.logdet(Wp);
+      double logdetm = K.logdet(Wm);
+      std::cout << "norm = " << dk(x,mu)[qij] - (logdetp-logdetm)/(2.0*eps) << std::endl;
+    }
+  }
+
+
+
+// Lattice::Coord x{0,1};
+  // const int mu = 1;
+
+  // {
+  //   const double eps = 1.0e-5;
+  //   const Force f = K.gen(W, rng);
+  //   // std::cout << "f = " << std::endl;
+  //   // for(auto elem : f.field) std::cout << elem << std::endl;
+  //   Force dk = K.d(f, W);
+  //   // std::cout << "dk = " << std::endl;
+  //   // for(auto elem : dk.field) std::cout << elem << std::endl;
+
+  //   for(int qij=0; qij<2*Nc*Nc; qij++){
+  //     Gauge Wp(W);
+  //     Gauge Wm(W);
+  //     Wp(x,mu)[qij] += eps;
+  //     Wm(x,mu)[qij] -= eps;
+  //     Wp.update_others();
+  //     Wm.update_others();
+
+  //     double Kp = K(f, Wp);
+  //     double Km = K(f, Wm);
+  //     std::cout << "norm = " << dk(x,mu)[qij] - (Kp-Km)/(2.0*eps) << std::endl;
+  //   }
+  // }
+  // {
+  //   Force dk = K.logdet_d(W);
+
+  //   const double eps = 1.0e-5;
+
+  //   for(int qij=0; qij<2*Nc*Nc; qij++){
+  //     Gauge Wp(W);
+  //     Gauge Wm(W);
+  //     Wp(x,mu)[qij] += eps;
+  //     Wm(x,mu)[qij] -= eps;
+  //     Wp.update_others();
+  //     Wm.update_others();
+  //     double logdetp = K.logdet(Wp);
+  //     double logdetm = K.logdet(Wm);
+  //     std::cout << "norm = " << dk(x,mu)[qij] - (logdetp-logdetm)/(2.0*eps) << std::endl;
+  //   }
+  // }
+
+
+
+  {
+    // const double stot = 1.0;
+    // const int nsteps = 10;
+    // Integrator md(S, K, stot, nsteps);
+    // HMC hmc(md, rng, stot, nsteps);
+    for(int nsteps=10; nsteps<400; nsteps*=2){
+      const double stot = 1.0;
+      //const int nsteps = 40;
+      Integrator md(S, K, stot, nsteps);
+      HMC hmc(md, rng, stot, nsteps);
+
+      rng.seed( seed );
+      W.randomize( rng, 1.0 );
+
+      {
+        Force p = K.gen( W, rng );
+
+        const double Hinit = md.H(p,W);
+        // std::cout << Hinit << std::endl;
+        for(int i=0; i<md.nsteps; i++) md.onestep( p, W );
+        const double Hfin = md.H(p,W);
+        // std::cout << Hfin << std::endl;
+        const double diff = Hfin-Hinit;
+        std::cout << hmc.tau << "\t" << diff << std::endl;
+      }
+
+    }
+  }

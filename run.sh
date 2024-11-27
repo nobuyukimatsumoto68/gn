@@ -3,7 +3,7 @@
 make
 
 ntherm=1000
-niter=40000
+niter=400000
 
 outfile="rmhmc_su2.dat"
 

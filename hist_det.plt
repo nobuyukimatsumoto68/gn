@@ -20,16 +20,16 @@ set ylabel "y"
 # set logscale x
 # set logscale y
 
-plot "obs/absdetK2.000000_.dat" using 0:2
+# plot "obs/absdetPhi1.000000.dat" using 0:2
 # replot "obs/absdetPhi2.200000.dat" using 0:2
 # replot "obs/absdetPhi3.400000.dat" using 0:2
 # replot "obs/absdetPhi4.600000.dat" using 0:2
 
-# binwidth=0.1
-# bin(x,width)=width*floor(x/width)
-# plot "obs/absdetK2.000000.dat" using (bin($2,binwidth)):(1.0) smooth freq with boxes
-# replot "obs/absdetPhi2.200000.dat" using (bin($2,binwidth)):(1.0) smooth freq with boxes
-# replot "obs/absdetPhi3.400000.dat" using (bin($2,binwidth)):(1.0) smooth freq with boxes
-# replot "obs/absdetPhi4.600000.dat" using (bin($2,binwidth)):(1.0) smooth freq with boxes
+binwidth=0.1
+bin(x,width)=width*floor(x/width)
+plot "obs/absdetPhi1.000000.dat" using (bin($2,binwidth)):(1.0) smooth freq with boxes
+replot "obs/absdetPhi2.200000.dat" using (bin($2,binwidth)):(1.0) smooth freq with boxes
+replot "obs/absdetPhi3.400000.dat" using (bin($2,binwidth)):(1.0) smooth freq with boxes
+replot "obs/absdetPhi4.600000.dat" using (bin($2,binwidth)):(1.0) smooth freq with boxes
 # replot [0.001:0.1] x**2
 # set output
