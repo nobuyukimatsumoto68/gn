@@ -5,8 +5,8 @@
 #include <filesystem>
 
 #include <omp.h>
-constexpr int nparallel=3;
-#define Nc 2
+constexpr int nparallel=6;
+#define Nc 3
 #define NA Nc*Nc-1
 #define NG 2*Nc*Nc
 #define NH Nc*Nc
@@ -14,6 +14,7 @@ constexpr int nparallel=3;
 
 #include "lattice.h"
 #include "rng.h"
+#include "generators.h"
 #include "force.h"
 #include "gauge.h"
 #include "kernel.h"
@@ -38,46 +39,51 @@ int main( int argc, char *argv[] ){
 
   // ------------------
 
-  using Force = Force2D;
+  using Force = Force2D<ForceSingleLink>;
   using Gauge = Dim2Gauge;
   using Action = WilsonGaussianAndDet2D;
 
-  // using Kernel = ProductKernel<TrivialKernel>;
-  using Kernel = ProductKernel<IdpWHW, double>;
-  using Integrator = ImplicitLeapfrog<Force,Gauge,Action,Kernel>;
+  using Kernel = ProductKernel<TrivialKernel>;
+  // using Kernel = ProductKernel<IdpWHW, double>;
+  using Integrator = ExplicitLeapfrog<Force,Gauge,Action,Kernel>;
   using Rng = ParallelRngLink;
   using HMC = HMC<Force,Gauge,Integrator,Rng>;
 
   // ---------------
 
-  const Lattice lat( Lattice::Coord{{ 24, 24 }} );
+  const Lattice lat( Lattice::Coord{{ 32, 32 }} );
 
   // ---------------
 
   Gauge W(lat);
 
-  std::vector<Obs<double, Gauge>*> obslist;
-  std::string data_path="./obs/";
-  std::filesystem::create_directory(data_path);
-
   // ------------------
 
   double beta = 2.0; // 4.0
   if (argc>2){ beta = atof(argv[2]); }
-  const double lambda = 1.0;
+  double lambda = 1.0;
+  if (argc>3){ lambda = atof(argv[3]); }
+  // const double kappa = 0.0;
   const double kappa = 5.0;
   Action S(lat, beta, lambda, kappa);
 
   // ------------------
 
-  // Kernel K(lat, Nc);
-  const double alpha = 0.001;
-  Kernel K(lat, alpha);
+  std::vector<Obs<double, Gauge>*> obslist;
+  std::string data_path="./obs"+std::to_string(beta)+"_"+std::to_string(kappa)+"_"+std::to_string(lambda)+"_"+"/";
+  std::filesystem::create_directory(data_path);
+
+  // ------------------
+
+
+  Kernel K(lat);
+  // const double alpha = 0.001;
+  // Kernel K(lat, alpha);
 
   // ------------------
 
   Rng rng(lat, 1);
-  W.randomize( rng, 1.0 );
+  // W.randomize( rng, 1.0 );
 
   // ------------------
 
@@ -104,14 +110,43 @@ int main( int argc, char *argv[] ){
                             },
                             exact );
   obslist.push_back(&retrU);
-  // Obs<double, Gauge> phi_norm( "trPhisq", beta, [](const Gauge& W ){
-  //   return ( W.Phi - W.id() ).squaredNorm();
+
+  Obs<double, Gauge> retrUsq( "retrUsq", beta,
+			      [&](const Gauge& W ){
+				std::vector<double> tmp( lat.vol, 0.0 );
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(nparallel)
+#endif
+				for(Action::Idx ix=0; ix<lat.vol; ix++) {
+				  const Action::Complex tmp2 = S.plaq(W, ix).trace();
+				  tmp[ix] += (tmp2*tmp2).real();
+				}
+				double res = 0.0;
+				for(auto elem : tmp ) res += elem;
+				res /= lat.vol;
+				return res;
+			      },
+			      0.0 );
+  obslist.push_back(&retrUsq);
+
+  Obs<double, Gauge> phi_norm( "trPhisq", beta, [&](const Gauge& W ){
+    std::vector<double> tmp( lat.vol, 0.0 );
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(nparallel)
+#endif
+    for(Action::Idx ix=0; ix<lat.vol; ix++) {
+      tmp[ix] += ( W[ix].Phi - W[ix].id() ).squaredNorm();
+    }
+    double res = 0.0;
+    for(auto elem : tmp ) res += elem;
+    res /= lat.vol;
+    return res;
+  }, 0.0 );
+  obslist.push_back(&phi_norm);
+  // Obs<double, double> acceptance( "acceptance", beta, [](const double r ){
+  //   return r;
   // }, 0.0 );
-  // obslist.push_back(&phi_norm);
-  // Obs<double, Gauge> phi_det_abs( "absdetPhi", beta, [](const Gauge& W ){
-  //   return std::abs(W.Phi.determinant());
-  // }, 0.0 );
-  // obslist.push_back(&phi_det_abs);
+  // obslist.push_back(&);
   // Obs<double, Gauge> detK( "absdetK", beta, [&](const Gauge& W ){
   //   return std::abs(K.det(W));
   // }, 0.0 );
@@ -120,31 +155,35 @@ int main( int argc, char *argv[] ){
   // ------------------
 
   rng.seed( seed );
-  W.randomize( rng );
+  W.randomize( rng, 1.0);
 
   // ------------------
 
   const double stot = 1.0;
-  int nsteps = 6;
+  int nsteps = 10;
+  // int nsteps = 11;
 
   Integrator md(S, K, stot, nsteps);
   HMC hmc(md, rng, stot, nsteps);
 
   {
-    int ntherm=200;
+    int ntherm=1000;
     int niter=1000;
+    int until=20;
     // int ntherm=10;
     // int niter=0;
-    if (argc>3){ ntherm = atoi(argv[3]); }
-    if (argc>4){ niter = atoi(argv[4]); }
+    if (argc>4){ ntherm = atoi(argv[4]); }
+    if (argc>5){ niter = atoi(argv[5]); }
     const int interval = 10;
-    const int binsize = 20;
+    const int binsize = 10;
 
     double dH, r;
     bool is_accept;
 
     for(int n=0; n<ntherm; n++) {
-      hmc.run(W, r, dH, is_accept);
+      bool no_reject = false;
+      if(n<until) no_reject = true;
+      hmc.run(W, r, dH, is_accept, no_reject);
       std::clog << "n = " << n
         	<< ", r = " << r
         	<< ", dH = " << dH

@@ -203,7 +203,7 @@ struct LinkConfig { // Force=ForceSingleLink
 //                        cosine * sigma3() );
 // };
 
-  void randomize( Rng& rng, const double width=1.0 ){
+  void randomize( Rng& rng, const double width=1.0, const double c = 1.0 ){
     // MC tmp;
     // while(true){
     //   for(int i=0; i<Nc; i++){
@@ -230,7 +230,7 @@ struct LinkConfig { // Force=ForceSingleLink
 	(*this)(i, j) = rng.gaussian() + I * rng.gaussian();
 	(*this)(i, j) *= width;
       }}
-    W += id();
+    W += c*id();
     update_others();
     theta += 2.0*M_PI/Nc * (rng.mt()%Nc);
     update();
@@ -474,19 +474,19 @@ struct LinkConf { // Force=ForceSingleLink
     return res;
   }
 
-  void randomize( Rng& rng, const double width=1.0 ){
-    for(int i=0; i<Nc; i++){
-      for(int j=0; j<Nc; j++){
-        (*this)(i, j) = rng.gaussian() + I * rng.gaussian();
-        (*this)(i, j) *= width;
-      }}
-    update_others();
-    // for(int i=0; i<Nc; i++){
-    //   for(int j=0; j<Nc; j++){
-    //     W(i, j) = f1() + I*f2();
-    //   }}
-    // update_others();
-  }
+  // void randomize( Rng& rng, const double width=1.0, const double c = 1.0 ){
+  //   for(int i=0; i<Nc; i++){
+  //     for(int j=0; j<Nc; j++){
+  //       (*this)(i, j) = rng.gaussian() + I * rng.gaussian();
+  //       (*this)(i, j) *= width;
+  //     }}
+  //   update_others();
+  //   // for(int i=0; i<Nc; i++){
+  //   //   for(int j=0; j<Nc; j++){
+  //   //     W(i, j) = f1() + I*f2();
+  //   //   }}
+  //   // update_others();
+  // }
 
   void check_consistency( const double TOL=1.0e-10 ) const {
     const MC check = u()*Phi*U;
@@ -702,13 +702,14 @@ struct Dim2Gauge {
     for(auto it = field.begin(); it!=field.end(); it++ ) it->update_others();
   }
 
-  void randomize( Rng& rng, const double width=1.0 ){
+  // void randomize( Rng& rng, const double width=1.0 ){
+  void randomize( Rng& rng, const double width=1.0, const double c = 1.0 ){
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(nparallel)
 #endif
     for(auto it = field.begin(); it!=field.end(); it++ ){
       const Idx il = std::distance( field.begin(), it );
-      it->randomize( rng[il], width );
+      it->randomize( rng[il], width, c );
       // for(int i=0; i<Nc; i++){
       //   for(int j=0; j<Nc; j++){
       //     (*it)(i, j) = rng[il].gaussian() + I * rng[il].gaussian();

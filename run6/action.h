@@ -25,17 +25,20 @@ struct WilsonGaussianAndDet2D {
   const double beta;
   const double lambda;
   const double kappa;
+  const double c;
 
   const Generators t;
 
   WilsonGaussianAndDet2D(const Lattice& lattice,
 			 const double beta_,
 			 const double lambda_,
-			 const double kappa_ )
+			 const double kappa_ ,
+			 const double c_=1.0)
     : lattice(lattice)
     , beta(beta_)
     , lambda(lambda_)
     , kappa(kappa_)
+    , c(c_)
     , t()
   {}
 
@@ -80,10 +83,10 @@ struct WilsonGaussianAndDet2D {
     for(Idx ix=0; ix<lattice.vol; ix++) {
       tmp[ix] -= beta/Nc * plaq(W, ix).trace().real();
 
-      tmp[ix] += 0.5*lambda/Nc * ( W(ix,0).Phi - W(ix,0).id() ).squaredNorm();
+      tmp[ix] += 0.5*lambda/Nc * ( W(ix,0).Phi - c*W(ix,0).id() ).squaredNorm();
       tmp[ix] -= kappa/Nc * std::log( W(ix,0).Phi.determinant().real() );
 
-      tmp[ix] += 0.5*lambda/Nc * ( W(ix,1).Phi - W(ix,1).id() ).squaredNorm();
+      tmp[ix] += 0.5*lambda/Nc * ( W(ix,1).Phi - c*W(ix,1).id() ).squaredNorm();
       tmp[ix] -= kappa/Nc * std::log( W(ix,1).Phi.determinant().real() );
     }
     for(auto elem : tmp ) res += elem;
@@ -103,7 +106,7 @@ struct WilsonGaussianAndDet2D {
   }
 
   double dphi0( const Gauge& W, const Idx ix, const int mu ) const {
-    double res = ( W(ix,mu).Phi - W(ix,mu).id() ).trace().real();
+    double res = ( W(ix,mu).Phi - c*W(ix,mu).id() ).trace().real();
     res *= lambda/Nc;
     res -= kappa/Nc * W(ix,mu).Phi.inverse().trace().real();
     return res;
@@ -139,65 +142,65 @@ struct WilsonGaussianAndDet2D {
 
 
 
-struct WilsonGaussianAndDet2 {
-  using Force = LinkForce;
-  using Gauge = LinkConf;
+// struct WilsonGaussianAndDet2 {
+//   using Force = LinkForce;
+//   using Gauge = LinkConf;
 
-  using Complex = std::complex<double>;
-  // using MC = Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-  using MR = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-  // using VC = Eigen::VectorXcd;
-  using VR = Eigen::VectorXd;
+//   using Complex = std::complex<double>;
+//   // using MC = Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+//   using MR = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+//   // using VC = Eigen::VectorXcd;
+//   using VR = Eigen::VectorXd;
 
-  const double beta;
-  const double lambda;
-  const double kappa;
+//   const double beta;
+//   const double lambda;
+//   const double kappa;
 
-  WilsonGaussianAndDet2(const double beta_,
-                       const double lambda_,
-                       const double kappa_
-                       )
-    : beta(beta_)
-    , lambda(lambda_)
-    , kappa(kappa_)
-  {}
+//   WilsonGaussianAndDet2(const double beta_,
+//                        const double lambda_,
+//                        const double kappa_
+//                        )
+//     : beta(beta_)
+//     , lambda(lambda_)
+//     , kappa(kappa_)
+//   {}
 
-  double operator()( const Gauge& W ) const {
-    double res = 0.0;
-    res -= beta/Nc * ( W.U ).trace().real();
-    res += 0.5*lambda/Nc * ( W.Phi - W.id() ).squaredNorm();
-    res -= kappa/Nc * std::log( W.Phi.determinant().real() );
-    return res;
-  }
+//   double operator()( const Gauge& W ) const {
+//     double res = 0.0;
+//     res -= beta/Nc * ( W.U ).trace().real();
+//     res += 0.5*lambda/Nc * ( W.Phi - W.id() ).squaredNorm();
+//     res -= kappa/Nc * std::log( W.Phi.determinant().real() );
+//     return res;
+//   }
 
-  double Da( const Gauge& W, const int a ) const {
-    double res = beta/Nc * ( W.t[a]*W.U ).trace().imag();
-    return res;
-  }
+//   double Da( const Gauge& W, const int a ) const {
+//     double res = beta/Nc * ( W.t[a]*W.U ).trace().imag();
+//     return res;
+//   }
 
-  double dphia( const Gauge& W, const int a ) const {
-    double res = ( W.Phi * W.t[a] ).trace().real();
-    res *= lambda/Nc;
-    res -= kappa/Nc * (W.Phi.inverse()*W.t[a]).trace().real();
-    return res;
-  }
+//   double dphia( const Gauge& W, const int a ) const {
+//     double res = ( W.Phi * W.t[a] ).trace().real();
+//     res *= lambda/Nc;
+//     res -= kappa/Nc * (W.Phi.inverse()*W.t[a]).trace().real();
+//     return res;
+//   }
 
-  double dphi0( const Gauge& W ) const {
-    double res = ( W.Phi - W.id() ).trace().real();
-    res *= lambda/Nc;
-    res -= kappa/Nc * W.Phi.inverse().trace().real();
-    return res;
-  }
+//   double dphi0( const Gauge& W ) const {
+//     double res = ( W.Phi - W.id() ).trace().real();
+//     res *= lambda/Nc;
+//     res -= kappa/Nc * W.Phi.inverse().trace().real();
+//     return res;
+//   }
 
-  Force d( const Gauge& W ) const {
-    Force res;
-    for(int a=0; a<NA; a++) res.pi(a) = Da(W,a);
-    for(int a=0; a<NA; a++) res.rho(a) = dphia(W,a);
-    res.rho0 = dphi0(W);
-    return res;
-  }
+//   Force d( const Gauge& W ) const {
+//     Force res;
+//     for(int a=0; a<NA; a++) res.pi(a) = Da(W,a);
+//     for(int a=0; a<NA; a++) res.rho(a) = dphia(W,a);
+//     res.rho0 = dphi0(W);
+//     return res;
+//   }
 
-};
+// };
 
 
 
