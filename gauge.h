@@ -151,6 +151,7 @@ struct LinkConfig { // Force=ForceSingleLink
   double mod2pi( const double alpha ) const {
     double res = alpha + 4.0*M_PI;
     res -= int(std::floor(res/(2.0*M_PI)))*2.0*M_PI;
+    if(res>M_PI) res -= 2.0*M_PI;
     return res;
   }
 

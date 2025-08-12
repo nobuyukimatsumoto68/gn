@@ -1,9 +1,9 @@
-# set term postscript eps color blacktext enhanced
-# set output 'scale.eps'
-set xlabel font "Liberation Sans,16"
-set ylabel font "Liberation Sans,16"
-set tics font "Liberation Sans,20"
-set title font "Liberation Sans,22"
+set term pdfcairo
+set output 'retrU_2d.pdf'
+# set xlabel font "Liberation Sans,16"
+# set ylabel font "Liberation Sans,16"
+# set tics font "Liberation Sans,20"
+# set title font "Liberation Sans,22"
 # set title sprintf('Wilson-Majorana, %s=%d', '{/Symbol n}', nu) # "t2 t2 rectangular lattice"
 # set lmargin 0.
 # set rmargin 0.
@@ -20,7 +20,7 @@ set ylabel "y"
 # set zlabel ""
 # set logscale x
 # set logscale y
-plot "obs/retrU.dat" using 1:2:3 with errorbars
+plot "obs/retrU.dat" using 1:2:3 w yerrorbars lw 3
 replot "obs/retrU.dat" using 1:4
 # replot [0.001:0.1] x**2
 # set output
